@@ -1,0 +1,26 @@
+// Regiões próximas (limítrofes ou de acesso fácil), usadas para sugerir
+// alternativas quando a busca não encontra ninguém.
+export const VIZINHOS: Record<string, string[]> = {
+  aruja: ["itaquaquecetuba", "santa-isabel", "mogi-das-cruzes"],
+  "biritiba-mirim": ["mogi-das-cruzes", "salesopolis", "suzano"],
+  "ferraz-de-vasconcelos": ["poa", "suzano", "guaianases", "cidade-tiradentes"],
+  guararema: ["mogi-das-cruzes", "santa-isabel", "salesopolis"],
+  itaquaquecetuba: ["aruja", "poa", "suzano", "ferraz-de-vasconcelos", "itaim-paulista"],
+  "mogi-das-cruzes": ["suzano", "biritiba-mirim", "guararema", "aruja", "itaquaquecetuba"],
+  poa: ["ferraz-de-vasconcelos", "suzano", "itaquaquecetuba"],
+  salesopolis: ["biritiba-mirim", "guararema", "mogi-das-cruzes"],
+  "santa-isabel": ["aruja", "guararema", "mogi-das-cruzes"],
+  suzano: ["mogi-das-cruzes", "poa", "ferraz-de-vasconcelos", "itaquaquecetuba", "biritiba-mirim"],
+  penha: ["ermelino-matarazzo", "aricanduva", "mooca", "itaquera"],
+  "ermelino-matarazzo": ["penha", "sao-miguel-paulista", "itaquera"],
+  "sao-miguel-paulista": ["ermelino-matarazzo", "itaim-paulista", "itaquera"],
+  "itaim-paulista": ["sao-miguel-paulista", "guaianases", "itaquaquecetuba", "ferraz-de-vasconcelos"],
+  guaianases: ["itaim-paulista", "itaquera", "cidade-tiradentes", "ferraz-de-vasconcelos"],
+  "cidade-tiradentes": ["guaianases", "sao-mateus", "itaquera", "ferraz-de-vasconcelos"],
+  itaquera: ["penha", "aricanduva", "sao-mateus", "guaianases", "cidade-tiradentes"],
+  "sao-mateus": ["itaquera", "sapopemba", "aricanduva", "cidade-tiradentes"],
+  mooca: ["penha", "aricanduva", "vila-prudente"],
+  aricanduva: ["mooca", "penha", "itaquera", "sao-mateus", "vila-prudente"],
+  "vila-prudente": ["mooca", "aricanduva", "sapopemba"],
+  sapopemba: ["vila-prudente", "sao-mateus", "aricanduva"],
+};
