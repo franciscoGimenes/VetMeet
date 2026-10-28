@@ -8,13 +8,15 @@ import { Icon } from "./Icon";
 
 // Bottom sheet no celular. Com `estaticoNoDesktop`, a partir de lg o mesmo
 // conteúdo vira um bloco comum na página (ex.: barra lateral de filtros), sem
-// cabeçalho, rodapé nem fundo escurecido.
+// cabeçalho, rodapé nem fundo escurecido. `telaCheia` ocupa a altura toda da tela
+// no celular (cabeçalho e rodapé fixos, só o meio rola).
 export function Sheet({
   open,
   onClose,
   title,
   footer,
   estaticoNoDesktop = false,
+  telaCheia = false,
   children,
 }: {
   open: boolean;
@@ -22,6 +24,7 @@ export function Sheet({
   title: string;
   footer?: ReactNode;
   estaticoNoDesktop?: boolean;
+  telaCheia?: boolean;
   children: ReactNode;
 }) {
   const tituloId = useId();
@@ -64,8 +67,9 @@ export function Sheet({
         aria-modal={open ? true : undefined}
         aria-labelledby={tituloId}
         className={cn(
-          "relative flex max-h-[90dvh] flex-col rounded-t-card bg-surface shadow-overlay",
-          desk && "lg:max-h-none lg:rounded-none lg:bg-transparent lg:shadow-none",
+          "relative flex flex-col bg-surface shadow-overlay",
+          telaCheia ? "h-dvh" : "max-h-[90dvh] rounded-t-card",
+          desk && "lg:h-auto lg:max-h-none lg:rounded-none lg:bg-transparent lg:shadow-none",
         )}
       >
         <div className={cn("flex items-center justify-between gap-2 border-b border-border py-2 pr-2 pl-4", desk && "lg:hidden")}>
