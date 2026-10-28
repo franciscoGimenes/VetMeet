@@ -319,6 +319,7 @@ export type Database = {
           modalidades: string[]
           nome: string
           region_id: number
+          veterinarian_id: string | null
           whatsapp: string
         }
         Insert: {
@@ -332,6 +333,7 @@ export type Database = {
           modalidades?: string[]
           nome: string
           region_id: number
+          veterinarian_id?: string | null
           whatsapp: string
         }
         Update: {
@@ -345,6 +347,7 @@ export type Database = {
           modalidades?: string[]
           nome?: string
           region_id?: number
+          veterinarian_id?: string | null
           whatsapp?: string
         }
         Relationships: [
@@ -353,6 +356,13 @@ export type Database = {
             columns: ["region_id"]
             isOneToOne: false
             referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vet_waitlist_veterinarian_id_fkey"
+            columns: ["veterinarian_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarians"
             referencedColumns: ["id"]
           },
         ]
@@ -671,6 +681,13 @@ export type Database = {
           p_dias?: number
         }
         Returns: Json
+      }
+      publicar_pre_cadastro: {
+        Args: {
+          p_slug: string
+          p_waitlist_id: number
+        }
+        Returns: string
       }
       pre_cadastro_permitido: {
         Args: {
