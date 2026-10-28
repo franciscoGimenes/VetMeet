@@ -129,6 +129,7 @@ function argsRpc(f: Filtros) {
     p_fim_de_semana: f.disp.includes("fim-de-semana"),
     p_noturno: f.disp.includes("noturno"),
     p_preco_max: f.preco,
+    p_q: f.q,
   };
 }
 

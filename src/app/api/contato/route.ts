@@ -7,7 +7,7 @@ import type { Json } from "@/types/database";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CANAIS = ["whatsapp", "instagram", "maps"] as const;
 const ORIGENS = ["card", "perfil"] as const;
-const CHAVES_FILTRO = ["local", "bairro", "especie", "area", "servico", "modo", "pagamento", "disp", "preco"];
+const CHAVES_FILTRO = ["q", "local", "bairro", "especie", "area", "servico", "modo", "pagamento", "disp", "preco"];
 
 const textoCurto = (v: unknown): v is string => typeof v === "string" && v.length <= 60;
 

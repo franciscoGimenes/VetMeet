@@ -9,6 +9,8 @@ export function tituloBusca(f: Filtros, cat: Catalogos) {
   const especie = nome(cat.especies, f.especie);
   const local = nome(cat.regioes, f.local);
 
+  if (f.q) return `“${f.q}”${local ? ` em ${local}` : ""}: veterinários e clínicas`;
+
   let titulo = servico ?? "Veterinários";
   if (!servico && especie) titulo += ` para ${f.especie === "exoticos" ? "pets exóticos" : especie.toLowerCase()}`;
   if (local) titulo += ` em ${local}`;
@@ -18,7 +20,7 @@ export function tituloBusca(f: Filtros, cat: Catalogos) {
 // Só buscas por local e/ou espécie viram páginas indexáveis; o resto (e as
 // páginas 2+) fica fora do índice para não gerar milhares de URLs quase iguais.
 export function buscaIndexavel(f: Filtros, pagina: number) {
-  const outros = f.bairro || f.area || f.servico || f.preco || f.modo.length || f.pagamento.length || f.disp.length;
+  const outros = f.q || f.bairro || f.area || f.servico || f.preco || f.modo.length || f.pagamento.length || f.disp.length;
   return pagina === 1 && !outros;
 }
 

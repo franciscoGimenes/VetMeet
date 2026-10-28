@@ -10,6 +10,8 @@ export const DISPONIBILIDADES = [
 export const PRECOS_MAX = [150, 200, 250, 300] as const;
 
 export type Filtros = {
+  // Nome do veterinário ou da clínica (texto livre, já normalizado por normalizarNome).
+  q?: string;
   local?: string;
   bairro?: string;
   especie?: string;
@@ -22,6 +24,14 @@ export type Filtros = {
 };
 
 export type ChaveFiltro = keyof Filtros;
+
+export const NOME_MAX = 60;
+
+// Espaços colapsados e tamanho limitado; acentos e maiúsculas ficam por conta do banco.
+export function normalizarNome(texto: string | undefined) {
+  const q = (texto ?? "").replace(/\s+/g, " ").trim().slice(0, NOME_MAX).trim();
+  return q || undefined;
+}
 
 type ParamsBrutos = Record<string, string | string[] | undefined>;
 
@@ -50,6 +60,7 @@ export function parseFiltros(params: ParamsBrutos, cat: Catalogos): Filtros {
   const preco = Number(unico(params.preco));
 
   return {
+    q: normalizarNome(unico(params.q)),
     local,
     bairro,
     especie: valido(slugs(cat.especies), unico(params.especie)),
@@ -64,6 +75,7 @@ export function parseFiltros(params: ParamsBrutos, cat: Catalogos): Filtros {
 
 export function filtrosParaParams(f: Filtros, extra?: Record<string, string>) {
   const p = new URLSearchParams();
+  if (f.q) p.set("q", f.q);
   if (f.local) p.set("local", f.local);
   if (f.local && f.bairro) p.set("bairro", f.bairro);
   if (f.especie) p.set("especie", f.especie);
@@ -94,6 +106,7 @@ export function filtrosAtivos(f: Filtros, cat: Catalogos) {
     itens.find((i) => i.slug === slug)?.nome ?? slug ?? "";
   const ativos: { chave: string; rotulo: string; sem: Filtros }[] = [];
 
+  if (f.q) ativos.push({ chave: "q", rotulo: `Nome: “${f.q}”`, sem: { ...f, q: undefined } });
   if (f.local) {
     ativos.push({ chave: "local", rotulo: nome(cat.regioes, f.local), sem: { ...f, local: undefined, bairro: undefined } });
   }

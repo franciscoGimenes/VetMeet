@@ -276,6 +276,7 @@ async function nomesDosVeterinarios(supabase: Awaited<ReturnType<typeof createCl
 }
 
 const ROTULO_CHAVE: Record<string, string> = {
+  q: "Nome",
   especie: "Espécie",
   servico: "Serviço",
   area: "Área",
