@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          email: string
+        }
+        Insert: {
+          email: string
+        }
+        Update: {
+          email?: string
+        }
+        Relationships: []
+      }
+      search_events: {
+        Row: {
+          created_at: string
+          filtros: Json
+          id: number
+          local: string | null
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          filtros?: Json
+          id?: never
+          local?: string | null
+          total: number
+        }
+        Update: {
+          created_at?: string
+          filtros?: Json
+          id?: never
+          local?: string | null
+          total?: number
+        }
+        Relationships: []
+      }
       attendance_modes: {
         Row: {
           id: number
@@ -623,6 +659,16 @@ export type Database = {
           p_preco_max?: number
           p_regiao?: string
           p_servico?: string
+        }
+        Returns: Json
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      painel_admin: {
+        Args: {
+          p_dias?: number
         }
         Returns: Json
       }
