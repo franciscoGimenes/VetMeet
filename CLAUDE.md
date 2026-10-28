@@ -56,6 +56,12 @@ Use RLS no Supabase:
 - Leitura de `vet_waitlist`, `contact_events` e `search_events`: só usuários logados presentes em `admins` (`public.is_admin()`).
 - Funções RPC: prefira `security invoker` (o RLS continua valendo).
 
+## Regra temporária desta versão do MVP
+- O formulário "Sou veterinário" **publica o perfil na hora** (status `ativo`, `is_demo = false`, `crmv_verificado = false`), via `public.publicar_pre_cadastro`. O perfil nasce só com o que o formulário coleta (nome, CRMV, WhatsApp, cidade, espécies, modalidades); bio, áreas, serviços e preços ficam vazios.
+- Controlado por `PUBLICAR_PRE_CADASTRO_DIRETO` em `src/lib/mvp.ts`. Com `false`, volta a ser só lista de espera, e o texto de consentimento e as telas acompanham.
+- **Não vale para as próximas versões:** antes de evoluir o MVP, desligue a flag e substitua por aprovação manual no painel (a mesma função serve para um botão "aprovar").
+- Para tirar um perfil do ar: `update veterinarians set status = 'inativo' where slug = '...'` no SQL Editor.
+
 ## Painel e autenticação
 - `/admin` usa login por link mágico do Supabase. Duas travas: `ADMIN_EMAILS` (env) decide quem recebe o link; a tabela `admins` decide quem lê os dados.
 - `src/proxy.ts` (o antigo middleware, renomeado no Next 16) renova a sessão nas rotas `/admin` e `/auth`.

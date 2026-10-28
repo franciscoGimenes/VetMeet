@@ -53,8 +53,12 @@ export function CardVeterinario({ vet, contexto }: { vet: Veterinario; contexto:
             </Link>
           </h3>
           <p className="mt-0.5 text-sm text-slate-600">
-            {principal?.nome}
-            <span className="text-slate-400"> · </span>
+            {principal && (
+              <>
+                {principal.nome}
+                <span className="text-slate-400"> · </span>
+              </>
+            )}
             {vet.crmv}
           </p>
           {vet.isDemo && (

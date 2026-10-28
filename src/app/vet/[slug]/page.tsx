@@ -115,10 +115,12 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
           {principal && <p className="mt-1 text-base text-slate-700">{principal.nome}</p>}
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
             <span>{vet.crmv}</span>
-            {vet.crmvVerificado && (
+            {vet.crmvVerificado ? (
               <span className="inline-flex items-center gap-1 font-medium text-marca-800">
                 <IconeVerificado /> CRMV verificado
               </span>
+            ) : (
+              !vet.isDemo && <span className="text-slate-500">(informado pelo profissional)</span>
             )}
             {vet.anosExperiencia != null && (
               <>
@@ -359,24 +361,27 @@ function Contato({
               <p className="text-sm text-slate-600">
                 {[l.endereco, l.bairro?.nome, l.regiao.nome].filter(Boolean).join(", ")}
               </p>
-              <BotaoContato
-                demo={vet.isDemo}
-                href={
-                  vet.isDemo
-                    ? ""
-                    : linkMaps({
-                        lat: l.lat,
-                        lng: l.lng,
-                        endereco: l.endereco,
-                        bairro: l.bairro?.nome ?? null,
-                        cidade: l.regiao.nome,
-                      })
-                }
-                evento={evento("maps")}
-                className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-medium text-marca-800 underline hover:text-marca-900"
-              >
-                <IconeLocal /> Ver no Google Maps
-              </BotaoContato>
+              {/* Sem endereço nem coordenada o Maps só mostraria a cidade: melhor não oferecer. */}
+              {(l.endereco || l.lat != null) && (
+                <BotaoContato
+                  demo={vet.isDemo}
+                  href={
+                    vet.isDemo
+                      ? ""
+                      : linkMaps({
+                          lat: l.lat,
+                          lng: l.lng,
+                          endereco: l.endereco,
+                          bairro: l.bairro?.nome ?? null,
+                          cidade: l.regiao.nome,
+                        })
+                  }
+                  evento={evento("maps")}
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-medium text-marca-800 underline hover:text-marca-900"
+                >
+                  <IconeLocal /> Ver no Google Maps
+                </BotaoContato>
+              )}
             </li>
           ))}
         </ul>

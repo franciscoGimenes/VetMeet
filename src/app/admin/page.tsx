@@ -52,7 +52,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
     supabase.rpc("painel_admin", { p_dias: dias }),
     supabase
       .from("vet_waitlist")
-      .select("id, nome, crmv_numero, crmv_uf, whatsapp, email, especies, modalidades, created_at, regions(nome)")
+      .select("id, nome, crmv_numero, crmv_uf, whatsapp, email, especies, modalidades, created_at, regions(nome), veterinarians(slug)")
       .order("created_at", { ascending: false })
       .limit(200),
     getCatalogos(),
@@ -221,7 +221,17 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                     <td className="py-2 whitespace-nowrap text-slate-600 tabular-nums">
                       {new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                     </td>
-                    <td className="py-2 font-medium text-slate-900">{c.nome}</td>
+                    <td className="py-2 font-medium text-slate-900">
+                      {c.nome}
+                      {c.veterinarians?.slug && (
+                        <Link
+                          href={`/vet/${c.veterinarians.slug}`}
+                          className="ml-2 text-xs font-normal text-marca-800 hover:underline"
+                        >
+                          ver perfil
+                        </Link>
+                      )}
+                    </td>
                     <td className="py-2 whitespace-nowrap">
                       {c.crmv_uf} {c.crmv_numero}
                     </td>
