@@ -45,12 +45,15 @@ export function parseFiltros(params: ParamsBrutos, cat: Catalogos): Filtros {
   const regioes = slugs(cat.regioes);
   const valido = (set: Set<string>, v?: string) => (v && set.has(v) ? v : undefined);
 
-  const local = valido(regioes, unico(params.local));
+  // `loc` ("regiao" ou "regiao|bairro") é o que o formulário de filtros envia
+  // quando o JavaScript não roda; com JS, o cliente já manda local/bairro.
+  const [locRegiao, locBairro] = (unico(params.loc) ?? "").split("|");
+  const local = valido(regioes, unico(params.local) ?? locRegiao);
   const regiao = cat.regioes.find((r) => r.slug === local);
   const bairro = regiao
     ? valido(
         slugs(cat.bairros.filter((b) => b.region_id === regiao.id)),
-        unico(params.bairro),
+        unico(params.bairro) ?? locBairro,
       )
     : undefined;
 
