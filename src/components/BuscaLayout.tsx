@@ -1,19 +1,88 @@
 "use client";
 
-import { MapPin, Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useEffectEvent, useId, useRef, useState, useTransition, type ReactNode } from "react";
-import { Button, Chip, Icon, Input, Select, Sheet } from "@/components/ui";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
+import { Button, Chip, Disclosure, Icon, Input, OptionRow, Sheet } from "@/components/ui";
 import type { Catalogos } from "@/lib/catalogos";
 import { DISPONIBILIDADES, NOME_MAX, normalizarNome, PRECOS_MAX, type Filtros } from "@/lib/filtros";
 
 const DESKTOP = "(min-width: 1024px)";
 const ESPERA_DIGITACAO_MS = 400;
+const ESPERA_CONTAGEM_MS = 250;
 const NOME_MIN = 2;
 
-// `chave` é a query string atual: o formulário de filtros é recriado quando ela
-// muda, para voltar a refletir a URL. O campo de nome fica de fora (não pode
-// perder foco nem texto enquanto a pessoa digita).
+// Estado dos filtros enquanto a pessoa escolhe (no celular só vale ao tocar em
+// "Ver resultados"). `loc` é "regiao" ou "regiao|bairro".
+type Rascunho = {
+  loc: string;
+  especie: string;
+  servico: string;
+  area: string;
+  preco: string;
+  modo: string[];
+  disp: string[];
+  pagamento: string[];
+};
+
+function rascunhoDe(f: Filtros): Rascunho {
+  return {
+    loc: f.local ? (f.bairro ? `${f.local}|${f.bairro}` : f.local) : "",
+    especie: f.especie ?? "",
+    servico: f.servico ?? "",
+    area: f.area ?? "",
+    preco: f.preco ? String(f.preco) : "",
+    modo: f.modo,
+    disp: f.disp,
+    pagamento: f.pagamento,
+  };
+}
+
+function lerRascunho(form: HTMLFormElement): Rascunho {
+  const d = new FormData(form);
+  const um = (k: string) => {
+    const v = d.get(k);
+    return typeof v === "string" ? v : "";
+  };
+  const varios = (k: string) => d.getAll(k).filter((v): v is string => typeof v === "string" && v !== "");
+  return {
+    loc: um("loc"),
+    especie: um("especie"),
+    servico: um("servico"),
+    area: um("area"),
+    preco: um("preco"),
+    modo: varios("modo"),
+    disp: varios("disp"),
+    pagamento: varios("pagamento"),
+  };
+}
+
+function paramsDe(r: Rascunho, q: string | undefined) {
+  const p = new URLSearchParams();
+  if (q) p.set("q", q);
+  const [local, bairro] = r.loc.split("|");
+  if (local) p.set("local", local);
+  if (local && bairro) p.set("bairro", bairro);
+  for (const k of ["especie", "servico", "area", "preco"] as const) if (r[k]) p.set(k, r[k]);
+  for (const k of ["modo", "disp", "pagamento"] as const) r[k].forEach((v) => p.append(k, v));
+  return p;
+}
+
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// `chave` é a query string atual. Quando muda, os campos de filtro voltam ao
+// estado da URL (form.reset) sem remontar nada: as seções que a pessoa abriu
+// continuam abertas e o campo de nome não perde foco nem texto.
 export function BuscaLayout({
   catalogos,
   filtros,
@@ -26,68 +95,120 @@ export function BuscaLayout({
   children: ReactNode;
 }) {
   const router = useRouter();
-  // Ids únicos por instância: com Cache Components, a página anterior fica no DOM
-  // escondida (<Activity>), e ids fixos fariam form="..." apontar para o
-  // formulário escondido.
-  const id = useId();
-  const FORM_ID = `${id}-form`;
-  const ID_NOME = `${id}-nome`;
   const naBusca = usePathname() === "/buscar";
+  // Ids únicos por instância: com Cache Components, a página anterior fica no DOM
+  // escondida (<Activity>), e ids fixos apontariam para os elementos dela.
+  const id = useId();
+  const FORM_ID = `${id}-filtros`;
+  const ID_NOME = `${id}-nome`;
+
   const formRef = useRef<HTMLFormElement>(null);
   const [pendente, startTransition] = useTransition();
   const [gavetaAberta, setGavetaAberta] = useState(false);
-  const [regiao, setRegiao] = useState(filtros.local ?? "");
   const [termo, setTermo] = useState(filtros.q ?? "");
   // O último nome que este componente mandou para a URL.
   const [qEnviado, setQEnviado] = useState(filtros.q);
+  const [rascunho, setRascunho] = useState(() => rascunhoDe(filtros));
+  const [buscaLocal, setBuscaLocal] = useState("");
+  const [total, setTotal] = useState<number | null>(null);
 
-  // URL mudou por fora (chip removido, link, voltar do navegador): sincroniza os
-  // campos controlados. Se a mudança foi o próprio nome digitado aqui, não mexe
-  // no texto, que pode já estar à frente do que foi enviado.
+  // URL mudou: o rascunho volta a ser a URL. O nome só é sobrescrito se a
+  // mudança veio de fora (chip removido, link, voltar do navegador).
   const [chaveAnterior, setChaveAnterior] = useState(chave);
   if (chave !== chaveAnterior) {
     setChaveAnterior(chave);
-    setRegiao(filtros.local ?? "");
+    setRascunho(rascunhoDe(filtros));
+    setBuscaLocal("");
     if (filtros.q !== qEnviado) {
       setTermo(filtros.q ?? "");
       setQEnviado(filtros.q);
     }
   }
+  // ...e os inputs não controlados (chips, linhas) voltam ao defaultChecked da URL.
+  useLayoutEffect(() => {
+    formRef.current?.reset();
+  }, [chave]);
 
-  const regiaoAtual = catalogos.regioes.find((r) => r.slug === regiao);
-  const bairros = regiaoAtual ? catalogos.bairros.filter((b) => b.region_id === regiaoAtual.id) : [];
-  const qtdFiltros =
+  const ativos =
+    (filtros.local ? 1 : 0) +
     [filtros.especie, filtros.servico, filtros.area, filtros.preco].filter(Boolean).length +
     filtros.modo.length +
     filtros.disp.length +
     filtros.pagamento.length;
 
   // substituir: troca a entrada do histórico em vez de criar outra (digitação).
-  function enviar({ semBairro = false, substituir = false } = {}) {
-    const form = formRef.current;
-    if (!form) return;
-    const params = new URLSearchParams();
-    for (const [chave, valor] of new FormData(form)) {
-      if (typeof valor !== "string" || !valor) continue;
-      if (semBairro && chave === "bairro") continue;
-      if (chave === "q") {
-        const q = normalizarNome(valor);
-        if (q) params.set("q", q);
-        continue;
-      }
-      params.append(chave, valor);
-    }
+  function navegar(params: URLSearchParams, substituir = false) {
     setQEnviado(params.get("q") ?? undefined);
     setGavetaAberta(false);
     const url = params.size ? `/buscar?${params}` : "/buscar";
     startTransition(() => (substituir ? router.replace(url) : router.push(url)));
   }
 
+  function aplicar(substituir = false) {
+    const r = formRef.current ? lerRascunho(formRef.current) : rascunho;
+    navegar(paramsDe(r, normalizarNome(termo)), substituir);
+  }
+
+  // Contagem ao vivo para o botão "Ver X resultados" do celular.
+  const contagem = useRef<AbortController | null>(null);
+  const esperaContagem = useRef<ReturnType<typeof setTimeout>>(undefined);
+  function contar(r: Rascunho) {
+    contagem.current?.abort();
+    const controle = new AbortController();
+    contagem.current = controle;
+    fetch(`/api/contagem?${paramsDe(r, normalizarNome(termo))}`, { signal: controle.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((d: { total: number }) => setTotal(d.total))
+      .catch(() => {});
+  }
+
+  function aoMudarFiltro(e: React.FormEvent<HTMLFormElement>) {
+    // Campos sem name (busca dentro da lista de lugares) não são filtro.
+    if (!(e.target as HTMLInputElement).name || !formRef.current) return;
+    const r = lerRascunho(formRef.current);
+    setRascunho(r);
+    if (window.matchMedia(DESKTOP).matches) {
+      navegar(paramsDe(r, normalizarNome(termo)));
+      return;
+    }
+    clearTimeout(esperaContagem.current);
+    esperaContagem.current = setTimeout(() => contar(r), ESPERA_CONTAGEM_MS);
+  }
+
+  function abrirGaveta() {
+    setTotal(null);
+    setGavetaAberta(true);
+    contar(rascunho);
+  }
+
+  // Fechar sem aplicar descarta o que foi mexido.
+  const fecharGaveta = useCallback(() => {
+    setGavetaAberta(false);
+    formRef.current?.reset();
+    setRascunho(rascunhoDe(filtros));
+    setBuscaLocal("");
+  }, [filtros]);
+
+  // "Limpar" no celular: zera as escolhas do rascunho (o nome continua).
+  function limparRascunho() {
+    const form = formRef.current;
+    if (!form) return;
+    for (const el of Array.from(form.elements)) {
+      if (!(el instanceof HTMLInputElement) || !el.name) continue;
+      if (el.type === "checkbox") el.checked = false;
+      if (el.type === "radio") el.checked = el.value === "";
+    }
+    const r = lerRascunho(form);
+    setRascunho(r);
+    setBuscaLocal("");
+    contar(r);
+  }
+
   // Debounce do nome: só busca depois de uma pausa na digitação, e só com 2+
   // letras (ou vazio, para limpar). Enter busca na hora. Fora de /buscar (página
   // inicial) só o Enter busca: navegar no meio da digitação trocaria de página e
   // a pessoa perderia o foco e o que digitou depois da pausa.
-  const buscarNome = useEffectEvent(() => enviar({ substituir: true }));
+  const buscarNome = useEffectEvent(() => aplicar(true));
   useEffect(() => {
     const q = normalizarNome(termo);
     if (!naBusca || q === qEnviado || (q && q.length < NOME_MIN)) return;
@@ -95,28 +216,40 @@ export function BuscaLayout({
     return () => clearTimeout(espera);
   }, [termo, qEnviado, naBusca]);
 
-  const fecharGaveta = useCallback(() => setGavetaAberta(false), []);
-  const noDesktop = () => window.matchMedia(DESKTOP).matches;
-
-  const macros = [
-    { chave: "alto_tiete", nome: "Alto Tietê" },
-    { chave: "zona_leste_sp", nome: "Zona Leste de São Paulo" },
-  ] as const;
+  const nomeDe = (itens: { slug: string; nome: string }[], slug: string) => itens.find((i) => i.slug === slug)?.nome;
+  const resumoVarios = (itens: { slug: string; nome: string }[], slugs: string[], vazio: string) =>
+    slugs.length === 0 ? vazio : slugs.length === 1 ? nomeDe(itens, slugs[0]) : `${slugs.length} selecionadas`;
+  const [locRegiao, locBairro] = rascunho.loc.split("|");
+  const regiaoSel = catalogos.regioes.find((r) => r.slug === locRegiao);
+  const bairroSel = regiaoSel && catalogos.bairros.find((b) => b.region_id === regiaoSel.id && b.slug === locBairro);
+  const rotuloBotao =
+    total === null
+      ? "Ver resultados"
+      : total === 0
+        ? "Nenhum resultado"
+        : total === 1
+          ? "Ver 1 resultado"
+          : `Ver ${total} resultados`;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
-      {/* Nome e localização: sempre visíveis, acima dos resultados */}
+      {/* Nome + botão de filtros: fixos no topo ao rolar (no celular) */}
       <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:mb-6 lg:rounded-card lg:border lg:bg-surface lg:p-4 lg:shadow-card">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="flex-1">
+        <form
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            aplicar();
+          }}
+          className="flex items-end gap-2"
+        >
+          <div className="min-w-0 flex-1">
             <label htmlFor={ID_NOME} className="mb-1 flex items-center gap-1.5 text-caption font-medium text-text-muted">
               <Icon icon={Search} size="sm" /> Nome do veterinário ou clínica
             </label>
             <div className="relative">
               <Input
                 id={ID_NOME}
-                name="q"
-                form={FORM_ID}
                 type="search"
                 enterKeyHint="search"
                 autoComplete="off"
@@ -139,107 +272,62 @@ export function BuscaLayout({
               )}
             </div>
           </div>
-          <label className="flex-1">
-            <span className="mb-1 flex items-center gap-1.5 text-caption font-medium text-text-muted">
-              <Icon icon={MapPin} size="sm" /> Cidade ou região
-            </span>
-            <Select
-              name="local"
-              form={FORM_ID}
-              value={regiao}
-              onChange={(e) => {
-                setRegiao(e.target.value);
-                queueMicrotask(() => enviar({ semBairro: true }));
-              }}
-            >
-              <option value="">Toda a região</option>
-              {macros.map((m) => (
-                <optgroup key={m.chave} label={m.nome}>
-                  {catalogos.regioes
-                    .filter((r) => r.regiao_macro === m.chave)
-                    .map((r) => (
-                      <option key={r.slug} value={r.slug}>
-                        {r.nome}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </Select>
-          </label>
-          {bairros.length > 1 && (
-            <label className="flex-1">
-              <span className="mb-1 block text-caption font-medium text-text-muted">Bairro</span>
-              <Select
-                key={`${regiao}|${chave}`}
-                name="bairro"
-                form={FORM_ID}
-                defaultValue={regiao === filtros.local ? (filtros.bairro ?? "") : ""}
-                onChange={() => enviar()}
-              >
-                <option value="">Todos os bairros</option>
-                {bairros.map((b) => (
-                  <option key={b.slug} value={b.slug}>
-                    {b.nome}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          )}
-          <Button variant="secondary" onClick={() => setGavetaAberta(true)} className="lg:hidden">
+          <Button variant="secondary" onClick={abrirGaveta} className="lg:hidden" aria-haspopup="dialog">
             <Icon icon={SlidersHorizontal} />
-            Filtros
-            {qtdFiltros > 0 && (
-              <span className="grid size-6 place-items-center rounded-pill bg-primary text-caption text-white">
-                {qtdFiltros}
-              </span>
-            )}
+            {ativos > 0 ? `Filtros (${ativos})` : "Filtros"}
           </Button>
-        </div>
+        </form>
       </div>
 
-      <div className="mt-4 lg:mt-0 lg:grid lg:grid-cols-[17rem_1fr] lg:gap-8">
-        {/* Filtros: bottom sheet no celular, barra lateral no desktop */}
+      <div className="mt-4 lg:mt-0 lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8">
+        {/* Filtros: sheet em tela cheia no celular, barra lateral no desktop */}
         <Sheet
           open={gavetaAberta}
           onClose={fecharGaveta}
           title="Filtros"
           estaticoNoDesktop
+          telaCheia
           footer={
             <>
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={() => {
-                  setGavetaAberta(false);
-                  // Limpa os filtros da gaveta; nome e cidade continuam.
-                  const manter = new URLSearchParams();
-                  if (filtros.q) manter.set("q", filtros.q);
-                  if (regiao) manter.set("local", regiao);
-                  startTransition(() => router.push(manter.size ? `/buscar?${manter}` : "/buscar"));
-                }}
-              >
+              <Button variant="secondary" size="lg" onClick={limparRascunho}>
                 Limpar
               </Button>
-              <Button type="submit" form={FORM_ID} className="flex-1">
-                Ver resultados
+              <Button type="submit" form={FORM_ID} size="lg" className="flex-1" aria-live="polite">
+                {rotuloBotao}
               </Button>
             </>
           }
         >
           <form
-            key={chave}
             id={FORM_ID}
             ref={formRef}
             action="/buscar"
             aria-label="Filtros"
             onSubmit={(e) => {
               e.preventDefault();
-              enviar();
+              aplicar();
             }}
-            onChange={() => noDesktop() && enviar()}
-            className="space-y-6 lg:sticky lg:top-6"
+            onChange={aoMudarFiltro}
+            className="lg:sticky lg:top-6"
           >
-            <Grupo titulo="Espécie">
+            {/* Sem JS o nome segue junto com os filtros */}
+            {filtros.q && <input type="hidden" name="q" value={filtros.q} />}
+
+            <Disclosure
+              title="Localização"
+              summary={regiaoSel ? (bairroSel ? `${bairroSel.nome}, ${regiaoSel.nome}` : regiaoSel.nome) : "Toda a região"}
+              defaultOpen
+            >
+              <ListaLocais
+                catalogos={catalogos}
+                selecionado={rascunho.loc}
+                inicial={rascunhoDe(filtros).loc}
+                busca={buscaLocal}
+                onBusca={setBuscaLocal}
+              />
+            </Disclosure>
+
+            <Disclosure title="Espécie" summary={nomeDe(catalogos.especies, rascunho.especie) ?? "Todas"} defaultOpen>
               <div className="flex flex-wrap gap-2">
                 <Chip type="radio" name="especie" value="" defaultChecked={!filtros.especie}>
                   Todas
@@ -250,43 +338,77 @@ export function BuscaLayout({
                   </Chip>
                 ))}
               </div>
-            </Grupo>
+            </Disclosure>
 
-            <Grupo titulo="Serviço" htmlFor={`${id}-servico`}>
-              <Select id={`${id}-servico`} name="servico" defaultValue={filtros.servico ?? ""}>
-                <option value="">Qualquer serviço</option>
+            <Disclosure title="Serviço" summary={nomeDe(catalogos.servicos, rascunho.servico) ?? "Qualquer"} defaultOpen>
+              <div className="flex flex-wrap gap-2">
+                <Chip type="radio" name="servico" value="" defaultChecked={!filtros.servico}>
+                  Qualquer
+                </Chip>
                 {catalogos.servicos.map((s) => (
-                  <option key={s.slug} value={s.slug}>
+                  <Chip key={s.slug} type="radio" name="servico" value={s.slug} defaultChecked={filtros.servico === s.slug}>
                     {s.nome}
-                  </option>
+                  </Chip>
                 ))}
-              </Select>
-            </Grupo>
+              </div>
+            </Disclosure>
 
-            <Grupo titulo="Modalidade">
-              {catalogos.modos.map((m) => (
-                <Caixa key={m.slug} name="modo" value={m.slug} rotulo={m.nome} marcado={filtros.modo.includes(m.slug)} />
-              ))}
-            </Grupo>
+            <Disclosure
+              title="Modalidade"
+              summary={resumoVarios(catalogos.modos, rascunho.modo, "Todas")}
+              defaultOpen={filtros.modo.length > 0}
+            >
+              <div className="space-y-2">
+                {catalogos.modos.map((m) => (
+                  <OptionRow
+                    key={m.slug}
+                    name="modo"
+                    value={m.slug}
+                    defaultChecked={filtros.modo.includes(m.slug)}
+                    hint={DESCRICAO_MODO[m.slug]}
+                  >
+                    {m.nome}
+                  </OptionRow>
+                ))}
+              </div>
+            </Disclosure>
 
-            <Grupo titulo="Área de atuação" htmlFor={`${id}-area`}>
-              <Select id={`${id}-area`} name="area" defaultValue={filtros.area ?? ""}>
-                <option value="">Qualquer área</option>
+            <Disclosure
+              title="Área de atuação"
+              summary={nomeDe(catalogos.areas, rascunho.area) ?? "Qualquer"}
+              defaultOpen={Boolean(filtros.area)}
+            >
+              <div className="flex flex-wrap gap-2">
+                <Chip type="radio" name="area" value="" defaultChecked={!filtros.area}>
+                  Qualquer
+                </Chip>
                 {catalogos.areas.map((a) => (
-                  <option key={a.slug} value={a.slug}>
+                  <Chip key={a.slug} type="radio" name="area" value={a.slug} defaultChecked={filtros.area === a.slug}>
                     {a.nome}
-                  </option>
+                  </Chip>
                 ))}
-              </Select>
-            </Grupo>
+              </div>
+            </Disclosure>
 
-            <Grupo titulo="Disponibilidade">
-              {DISPONIBILIDADES.map((d) => (
-                <Caixa key={d.slug} name="disp" value={d.slug} rotulo={d.nome} marcado={filtros.disp.includes(d.slug)} />
-              ))}
-            </Grupo>
+            <Disclosure
+              title="Disponibilidade"
+              summary={resumoVarios([...DISPONIBILIDADES], rascunho.disp, "Qualquer")}
+              defaultOpen={filtros.disp.length > 0}
+            >
+              <div className="flex flex-wrap gap-2">
+                {DISPONIBILIDADES.map((d) => (
+                  <Chip key={d.slug} name="disp" value={d.slug} defaultChecked={filtros.disp.includes(d.slug)}>
+                    {d.nome}
+                  </Chip>
+                ))}
+              </div>
+            </Disclosure>
 
-            <Grupo titulo="Preço da consulta">
+            <Disclosure
+              title="Preço da consulta"
+              summary={rascunho.preco ? `Até R$ ${rascunho.preco}` : "Qualquer"}
+              defaultOpen={Boolean(filtros.preco)}
+            >
               <div className="flex flex-wrap gap-2">
                 <Chip type="radio" name="preco" value="" defaultChecked={!filtros.preco}>
                   Qualquer
@@ -297,16 +419,24 @@ export function BuscaLayout({
                   </Chip>
                 ))}
               </div>
-            </Grupo>
+            </Disclosure>
 
-            <Grupo titulo="Forma de pagamento">
-              {catalogos.pagamentos.map((p) => (
-                <Caixa key={p.slug} name="pagamento" value={p.slug} rotulo={p.nome} marcado={filtros.pagamento.includes(p.slug)} />
-              ))}
-            </Grupo>
+            <Disclosure
+              title="Forma de pagamento"
+              summary={resumoVarios(catalogos.pagamentos, rascunho.pagamento, "Qualquer")}
+              defaultOpen={filtros.pagamento.length > 0}
+            >
+              <div className="flex flex-wrap gap-2">
+                {catalogos.pagamentos.map((p) => (
+                  <Chip key={p.slug} name="pagamento" value={p.slug} defaultChecked={filtros.pagamento.includes(p.slug)}>
+                    {p.nome}
+                  </Chip>
+                ))}
+              </div>
+            </Disclosure>
 
             <noscript>
-              <Button type="submit" block>
+              <Button type="submit" block className="mt-4">
                 Aplicar filtros
               </Button>
             </noscript>
@@ -325,39 +455,96 @@ export function BuscaLayout({
   );
 }
 
-const TITULO_GRUPO = "mb-2 block text-small font-semibold text-text";
+const DESCRICAO_MODO: Record<string, string> = {
+  clinica_propria: "Consultório ou clínica do profissional",
+  domiciliar: "O profissional vai até a sua casa",
+  teleorientacao: "Orientação por videochamada",
+};
 
-function Grupo({ titulo, htmlFor, children }: { titulo: string; htmlFor?: string; children: ReactNode }) {
-  if (htmlFor) {
-    return (
-      <div>
-        <label htmlFor={htmlFor} className={TITULO_GRUPO}>
-          {titulo}
-        </label>
-        {children}
-      </div>
-    );
-  }
-  return (
-    <fieldset>
-      <legend className={TITULO_GRUPO}>{titulo}</legend>
-      <div className="space-y-2">{children}</div>
-    </fieldset>
-  );
-}
+// Lista de lugares com busca. Todas as linhas ficam no DOM (escondidas quando
+// não batem com a busca) para a escolha feita continuar valendo no formulário.
+function ListaLocais({
+  catalogos,
+  selecionado,
+  inicial,
+  busca,
+  onBusca,
+}: {
+  catalogos: Catalogos;
+  selecionado: string;
+  inicial: string;
+  busca: string;
+  onBusca: (texto: string) => void;
+}) {
+  const termo = semAcento(busca.trim());
+  const regiaoSelecionada = selecionado.split("|")[0];
+  const bate = (nome: string) => !termo || semAcento(nome).includes(termo);
+  const macros = [
+    { chave: "alto_tiete", nome: "Alto Tietê" },
+    { chave: "zona_leste_sp", nome: "Zona Leste de São Paulo" },
+  ] as const;
 
-// Linha de checkbox com alvo de toque de 44px (a linha inteira é clicável).
-function Caixa({ name, value, rotulo, marcado }: { name: string; value: string; rotulo: string; marcado: boolean }) {
+  const grupos = macros.map((m) => {
+    const regioes = catalogos.regioes
+      .filter((r) => r.regiao_macro === m.chave)
+      .map((r) => {
+        const bairros = catalogos.bairros
+          .filter((b) => b.region_id === r.id && b.nome !== r.nome)
+          .map((b) => ({
+            ...b,
+            // Bairros aparecem quando a cidade está escolhida ou quando a busca acha o bairro.
+            visivel: termo ? bate(b.nome) : regiaoSelecionada === r.slug,
+          }));
+        const visivel = bate(r.nome) || (Boolean(termo) && bairros.some((b) => b.visivel));
+        return { ...r, bairros, visivel };
+      });
+    return { ...m, regioes, visivel: regioes.some((r) => r.visivel) };
+  });
+  const nenhum = Boolean(termo) && grupos.every((g) => !g.visivel);
+
   return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-3 text-small text-text">
-      <input
-        type="checkbox"
-        name={name}
-        value={value}
-        defaultChecked={marcado}
-        className="size-5 rounded-mark border-border-strong accent-primary"
+    <div>
+      <Input
+        type="search"
+        aria-label="Buscar cidade, subprefeitura ou bairro"
+        placeholder="Buscar cidade ou bairro"
+        autoComplete="off"
+        value={busca}
+        onChange={(e) => onBusca(e.target.value)}
+        className="mb-3"
       />
-      {rotulo}
-    </label>
+      <div className="max-h-72 space-y-2 overflow-y-auto overscroll-contain rounded-control border border-border p-2">
+        <OptionRow type="radio" name="loc" value="" defaultChecked={inicial === ""} hidden={Boolean(termo)}>
+          Toda a região
+        </OptionRow>
+        {grupos.map((g) => (
+          <div key={g.chave} className="space-y-2" hidden={!g.visivel}>
+            <p className="pt-2 text-caption font-semibold text-text-muted">{g.nome}</p>
+            {g.regioes.map((r) => (
+              <div key={r.slug} className="space-y-2" hidden={!r.visivel}>
+                <OptionRow type="radio" name="loc" value={r.slug} defaultChecked={inicial === r.slug}>
+                  {r.nome}
+                </OptionRow>
+                {r.bairros.map((b) => (
+                  <OptionRow
+                    key={b.slug}
+                    type="radio"
+                    name="loc"
+                    value={`${r.slug}|${b.slug}`}
+                    defaultChecked={inicial === `${r.slug}|${b.slug}`}
+                    hidden={!b.visivel}
+                    hint={termo ? r.nome : undefined}
+                    indent
+                  >
+                    {b.nome}
+                  </OptionRow>
+                ))}
+              </div>
+            ))}
+          </div>
+        ))}
+        {nenhum && <p className="py-2 text-small text-text-muted">Nenhum lugar com “{busca.trim()}”.</p>}
+      </div>
+    </div>
   );
 }

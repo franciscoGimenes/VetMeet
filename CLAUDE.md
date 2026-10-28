@@ -115,8 +115,23 @@ Escala (cada token já define família, peso, tamanho e entrelinha):
 
 ### Componentes base (`src/components/ui`)
 Button (primary, secondary, ghost, whatsapp; tamanhos md 44px e lg 52px), Chip (selecionável),
-Input, Select, Card, Badge, Sheet (bottom sheet no celular). Variações novas entram no
-componente, não na tela.
+OptionRow (linha inteira clicável com checkbox/radio desenhado), Disclosure (seção recolhível),
+Input, Select, Card, Badge, Sheet (bottom sheet no celular; `telaCheia` e `estaticoNoDesktop`).
+Variações novas entram no componente, não na tela.
+
+### Filtros da busca
+- Celular: botão "Filtros (n)" fixo no topo; sheet em tela cheia com cabeçalho e rodapé fixos.
+  As escolhas são um rascunho: só valem ao tocar em "Ver X resultados" (contagem ao vivo via
+  `/api/contagem`); fechar descarta. Desktop: barra lateral com os mesmos componentes,
+  aplicando a cada mudança.
+- Seções recolhíveis; Localização, Espécie e Serviço abertas por padrão (e qualquer seção com
+  filtro ativo).
+- Opções: chips para escolhas curtas, OptionRow para listas com descrição ou hierarquia.
+  Nada de checkbox solto, nada de select nativo para listas longas, nada de slider.
+- Localização: lista com busca (sem acento), bairros aparecem sob a cidade escolhida ou quando a
+  busca os acha. As linhas filtradas ficam no DOM com `hidden` para a escolha não se perder.
+- Os campos voltam ao estado da URL com `form.reset()` (não remontar: fecharia as seções
+  abertas). Por isso o campo de nome fica fora do formulário de filtros.
 
 ### Ícones
 Só `lucide-react`, sempre pelo componente `Icon` de `src/components/ui`. Tamanho padrão 20px,
