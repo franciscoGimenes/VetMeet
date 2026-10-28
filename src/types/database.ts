@@ -590,7 +590,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      buscar_veterinarios: {
+        Args: {
+          p_area?: string
+          p_bairro?: string
+          p_emergencia?: boolean
+          p_especie?: string
+          p_fim_de_semana?: boolean
+          p_limite?: number
+          p_modos?: string[]
+          p_noturno?: boolean
+          p_offset?: number
+          p_pagamentos?: string[]
+          p_preco_max?: number
+          p_regiao?: string
+          p_servico?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       contact_canal: "whatsapp" | "instagram" | "maps"
