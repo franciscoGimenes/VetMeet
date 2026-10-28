@@ -667,6 +667,7 @@ export type Database = {
           p_offset?: number
           p_pagamentos?: string[]
           p_preco_max?: number
+          p_q?: string
           p_regiao?: string
           p_servico?: string
         }
