@@ -45,7 +45,7 @@ async function Busca({ searchParams }: { searchParams: Promise<Params> }) {
       <h1 className="sr-only">{tituloBusca(filtros, catalogos)}</h1>
       {/* Só a página 1 conta: paginar não é uma busca nova. */}
       {pagina === 1 && <RegistroBusca consulta={consulta} />}
-      <BuscaLayout key={consulta} catalogos={catalogos} filtros={filtros}>
+      <BuscaLayout chave={consulta} catalogos={catalogos} filtros={filtros}>
         <ListaResultados catalogos={catalogos} filtros={filtros} pagina={pagina} />
       </BuscaLayout>
     </div>

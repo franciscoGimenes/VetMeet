@@ -37,7 +37,13 @@ export async function ListaResultados({
         <h2 className="text-h3 text-text">
           {titulo ?? (total === 1 ? "1 veterinário encontrado" : `${total} veterinários encontrados`)}
         </h2>
-        {contexto.localNome && <p className="text-small text-text-muted">em {contexto.localNome}</p>}
+        {(filtros.q || contexto.localNome) && (
+          <p className="text-small text-text-muted">
+            {filtros.q && <>para “{filtros.q}”</>}
+            {filtros.q && contexto.localNome && " "}
+            {contexto.localNome && <>em {contexto.localNome}</>}
+          </p>
+        )}
       </div>
 
       <FiltrosAtivos filtros={filtros} catalogos={catalogos} />
@@ -119,6 +125,8 @@ function Paginacao({ filtros, pagina, totalPaginas }: { filtros: Filtros; pagina
 // Sugere caminhos concretos: quais filtros afrouxar e quais regiões próximas
 // têm resultado, sempre com a contagem real.
 async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos: Catalogos }) {
+  if (filtros.q) return <NomeNaoEncontrado filtros={filtros} catalogos={catalogos} q={filtros.q} />;
+
   const afrouxar = filtrosAtivos(filtros, catalogos).filter((a) => a.chave !== "local");
   const vizinhos = filtros.local ? (VIZINHOS[filtros.local] ?? []) : [];
 
@@ -179,6 +187,54 @@ async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos
         {filtros.local && todaRegiao > 0 && (
           <ButtonLink href={urlBusca({ ...filtros, local: undefined, bairro: undefined })} variant="secondary">
             Buscar em toda a região ({todaRegiao})
+          </ButtonLink>
+        )}
+        <ButtonLink href={urlBusca(FILTROS_VAZIOS)} variant="secondary">
+          Limpar todos os filtros
+        </ButtonLink>
+      </div>
+    </Card>
+  );
+}
+
+// Busca por nome sem resultado: o caminho principal é tirar os outros filtros
+// (o nome pode existir em outra cidade ou modalidade) ou revisar a grafia.
+async function NomeNaoEncontrado({ filtros, catalogos, q }: { filtros: Filtros; catalogos: Catalogos; q: string }) {
+  const outrosFiltros = filtrosAtivos(filtros, catalogos).filter((a) => a.chave !== "q");
+  const soONome = { ...FILTROS_VAZIOS, q };
+  const semONome = { ...filtros, q: undefined };
+
+  const [totalSoONome, totalSemONome] = await Promise.all([
+    outrosFiltros.length ? contarVeterinarios(soONome) : 0,
+    contarVeterinarios(semONome),
+  ]);
+
+  return (
+    <Card padding="lg">
+      <h3 className="text-h3 text-text">
+        Nenhum veterinário ou clínica com “{q}”{outrosFiltros.length > 0 && " nesses filtros"}
+      </h3>
+
+      {totalSoONome > 0 ? (
+        <p className="mt-1 text-small text-text-muted">
+          {totalSoONome === 1 ? "Há 1 resultado" : `Há ${totalSoONome} resultados`} com esse nome quando os
+          outros filtros são removidos.
+        </p>
+      ) : (
+        <p className="mt-1 text-small text-text-muted">
+          Confira a grafia ou tente só uma parte do nome, como as primeiras letras.
+        </p>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-2">
+        {totalSoONome > 0 && (
+          <ButtonLink href={urlBusca(soONome)}>
+            Buscar “{q}” sem os outros filtros ({totalSoONome})
+          </ButtonLink>
+        )}
+        {outrosFiltros.length > 0 && totalSemONome > 0 && (
+          <ButtonLink href={urlBusca(semONome)} variant="secondary">
+            Manter filtros e limpar o nome ({totalSemONome})
           </ButtonLink>
         )}
         <ButtonLink href={urlBusca(FILTROS_VAZIOS)} variant="secondary">
