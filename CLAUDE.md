@@ -43,10 +43,33 @@ Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normaliza
 - `payment_methods`: catálogo
 - Tabelas de junção N:N: `veterinarian_species`, `veterinarian_specialties`, `veterinarian_services` (com preco_min/preco_max opcionais por serviço), `veterinarian_payment_methods`, `veterinarian_coverage_regions` (regiões cobertas em atendimento domiciliar)
 - `attendance_modes` (catálogo: clinica_propria, domiciliar, teleorientacao) + `veterinarian_attendance_modes`
-- `contact_events`: registro de cliques de contato (id, veterinarian_id, canal, filtros_usados jsonb, created_at). Sem dados pessoais do tutor.
-- `vet_waitlist`: pré-cadastro de veterinários reais (nome, crmv, whatsapp, email, cidade, especies, consentimento_lgpd, created_at)
+- `contact_events`: registro de cliques de contato (id, veterinarian_id com `on delete set null`, snapshots vet_slug/vet_is_demo preenchidos por trigger, canal: whatsapp | instagram | maps, origem: card | perfil, filtros_usados jsonb, created_at). Sem dados pessoais do tutor; sobrevive à remoção dos demos.
+- `vet_waitlist`: pré-cadastro de veterinários reais (nome, crmv_numero, crmv_uf, whatsapp, email, region_id, especies, modalidades, consentimento_lgpd, created_at)
+- `vet_waitlist_tentativas`: hash do IP por envio do pré-cadastro, para o limite de 5/hora (nunca o IP em claro)
+- `search_events`: buscas exibidas (filtros jsonb, local, total). Registradas pelo navegador via `/api/busca`, não na renderização do servidor (pré-carregamento de links inflaria os números)
+- `admins`: e-mails com acesso ao painel `/admin`
 
-Use RLS no Supabase: leitura pública só de veterinários `status = 'ativo'`; inserção pública apenas em `contact_events` e `vet_waitlist`; nada mais é gravável sem autenticação.
+Use RLS no Supabase:
+- Leitura pública: catálogos e veterinários `status = 'ativo'` (e seus vínculos).
+- Inserção pública (anon): apenas `contact_events`.
+- `vet_waitlist`, `vet_waitlist_tentativas` e `search_events` são gravados só pelo servidor com a service role (`src/lib/supabase/admin.ts`), depois de validação, honeypot e limite por IP. Não volte a abrir insert público nelas: isso permitiria contornar essas proteções pela API do Supabase com a chave pública.
+- Leitura de `vet_waitlist`, `contact_events` e `search_events`: só usuários logados presentes em `admins` (`public.is_admin()`).
+- Funções RPC: prefira `security invoker` (o RLS continua valendo).
+
+## Painel e autenticação
+- `/admin` usa login por link mágico do Supabase. Duas travas: `ADMIN_EMAILS` (env) decide quem recebe o link; a tabela `admins` decide quem lê os dados.
+- `src/proxy.ts` (o antigo middleware, renomeado no Next 16) renova a sessão nas rotas `/admin` e `/auth`.
+- Não há login de tutor nem de veterinário no MVP.
+
+## Banco e migrations
+- Projeto Supabase em nuvem: `vetmeet` (ref `xieishahvlzatkbuppch`). Não há Docker local.
+- Quando uma migration for aplicada pelo MCP do Supabase (`apply_migration`), o Supabase registra a versão com o horário da aplicação. Renomeie o arquivo em `supabase/migrations` para essa versão (confira com `list_migrations`), senão `supabase db push` diverge do histórico.
+- Deploy e banco de produção: ver `docs/DEPLOY.md`.
+
+## Next.js 16 neste projeto
+- `cacheComponents` está ligado: dados compartilhados usam `'use cache'` + `cacheLife`; `searchParams`, `params` e `cookies()` são lidos dentro de `<Suspense>`. Não use `useSearchParams` no cliente; passe os filtros como props.
+- Leia `node_modules/next/dist/docs/` antes de usar APIs que possam ter mudado (ver `AGENTS.md`).
+- Para testar no celular via IP da rede, `allowedDevOrigins` em `next.config.ts` já libera `192.168.*.*` e `10.*.*.*`.
 
 ## Filtros da busca
 1. **Localização**: município/subprefeitura e bairro. Para atendimento domiciliar, considerar `veterinarian_coverage_regions`.
