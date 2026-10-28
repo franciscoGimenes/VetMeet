@@ -36,9 +36,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="text-lg font-bold tracking-tight text-marca-800">
               VetMeet
             </Link>
-            <Link href="/buscar" className="text-sm font-medium text-slate-700 hover:text-slate-900">
-              Buscar veterinários
-            </Link>
+            <nav className="flex items-center gap-4 text-sm font-medium sm:gap-6">
+              <Link href="/buscar" className="text-slate-700 hover:text-slate-900">
+                <span className="sm:hidden">Buscar</span>
+                <span className="hidden sm:inline">Buscar veterinários</span>
+              </Link>
+              <Link
+                href="/sou-veterinario"
+                className="rounded-lg border border-marca-700 px-3 py-1.5 text-marca-800 hover:bg-marca-50"
+              >
+                Sou veterinário
+              </Link>
+            </nav>
           </div>
         </header>
         <main className="flex-1">{children}</main>
