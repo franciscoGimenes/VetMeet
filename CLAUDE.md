@@ -173,6 +173,13 @@ Use RLS no Supabase:
 - `cacheComponents` está ligado: dados compartilhados usam `'use cache'` + `cacheLife`; `searchParams`, `params` e `cookies()` são lidos dentro de `<Suspense>`. Não use `useSearchParams` no cliente; passe os filtros como props.
 - Leia `node_modules/next/dist/docs/` antes de usar APIs que possam ter mudado (ver `AGENTS.md`).
 - Para testar no celular via IP da rede, `allowedDevOrigins` em `next.config.ts` já libera `192.168.*.*` e `10.*.*.*`.
+- Com Cache Components, a página anterior **continua no DOM, escondida** (`<Activity>`, até 3 rotas). Em componentes de cliente, nunca use `id` fixo (nem para `form="..."`, `htmlFor` ou `aria-labelledby`): use `useId()`, senão o atributo aponta para o elemento da página escondida. Em testes, selecione só elementos visíveis.
+
+## Busca por nome
+- `?q=` procura no nome do veterinário e no nome das clínicas dele, sem acento e sem maiúsculas, por trecho; cada palavra precisa aparecer em um dos dois.
+- No banco: `public.normalizar_texto()` (unaccent com dicionário fixo, imutável) + índices trigrama (`pg_trgm`) nas duas colunas. Extensões ficam no schema `extensions`.
+- No campo: debounce de 400ms, mínimo de 2 letras, Enter busca na hora, digitação usa `router.replace` (não enche o histórico). Na página inicial só o Enter busca (navegar no meio da digitação trocaria de página).
+- Não tolera erro de digitação ("Kéber" não acha "Kléber"); `pg_trgm` permite adicionar isso depois com `similarity`.
 
 ## Filtros da busca
 1. **Localização**: município/subprefeitura e bairro. Para atendimento domiciliar, considerar `veterinarian_coverage_regions`.

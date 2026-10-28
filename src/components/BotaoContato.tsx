@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui";
 import type { EventoContato } from "@/lib/contato";
 
@@ -87,6 +87,7 @@ function AvisoDemo({
   onFechar: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const tituloId = useId();
 
   useEffect(() => {
     ref.current?.showModal();
@@ -97,11 +98,11 @@ function AvisoDemo({
       ref={ref}
       onClose={onFechar}
       onClick={(e) => e.target === ref.current && ref.current.close()}
-      aria-labelledby="aviso-demo-titulo"
+      aria-labelledby={tituloId}
       className="m-auto w-[min(26rem,calc(100%-2rem))] rounded-card bg-surface p-0 text-left text-text shadow-overlay backdrop:bg-text/50"
     >
       <div className="p-6">
-        <h2 id="aviso-demo-titulo" className="text-h3 text-text">
+        <h2 id={tituloId} className="text-h3 text-text">
           Perfil de demonstração
         </h2>
         <p className="mt-2 text-small text-text-muted">
