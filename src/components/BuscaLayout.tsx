@@ -1,17 +1,14 @@
 "use client";
 
+import { MapPin, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
-import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO } from "@/components/estilos";
-import { IconeFechar, IconeFiltros, IconeLocal } from "@/components/icones";
+import { useCallback, useRef, useState, useTransition, type ReactNode } from "react";
+import { Button, Chip, Icon, Select, Sheet } from "@/components/ui";
 import type { Catalogos } from "@/lib/catalogos";
 import { DISPONIBILIDADES, PRECOS_MAX, type Filtros } from "@/lib/filtros";
 
 const FORM_ID = "busca";
 const DESKTOP = "(min-width: 1024px)";
-
-const SELECT =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-marca-600 focus:outline-2 focus:outline-marca-600/30";
 
 // Remonte este componente (via `key`) quando os filtros da URL mudarem, para o
 // estado local voltar a refletir a busca atual.
@@ -51,19 +48,8 @@ export function BuscaLayout({
     startTransition(() => router.push(params.size ? `/buscar?${params}` : "/buscar"));
   }
 
+  const fecharGaveta = useCallback(() => setGavetaAberta(false), []);
   const noDesktop = () => window.matchMedia(DESKTOP).matches;
-
-  // Gaveta aberta no celular: trava a rolagem do fundo e fecha com Esc.
-  useEffect(() => {
-    if (!gavetaAberta) return;
-    const fechar = (e: KeyboardEvent) => e.key === "Escape" && setGavetaAberta(false);
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", fechar);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", fechar);
-    };
-  }, [gavetaAberta]);
 
   const macros = [
     { chave: "alto_tiete", nome: "Alto Tietê" },
@@ -73,13 +59,13 @@ export function BuscaLayout({
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
       {/* Localização: sempre visível, acima dos resultados */}
-      <div className="sticky top-0 z-30 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:mb-6 lg:rounded-2xl lg:border lg:bg-white lg:p-4 lg:shadow-sm">
+      <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:mb-6 lg:rounded-card lg:border lg:bg-surface lg:p-4 lg:shadow-card">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <label className="flex-1">
-            <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-              <IconeLocal /> Cidade ou região
+            <span className="mb-1 flex items-center gap-1.5 text-caption font-medium text-text-muted">
+              <Icon icon={MapPin} size="sm" /> Cidade ou região
             </span>
-            <select
+            <Select
               name="local"
               form={FORM_ID}
               value={regiao}
@@ -87,7 +73,6 @@ export function BuscaLayout({
                 setRegiao(e.target.value);
                 queueMicrotask(() => enviar({ semBairro: true }));
               }}
-              className={SELECT}
             >
               <option value="">Toda a região</option>
               {macros.map((m) => (
@@ -101,18 +86,17 @@ export function BuscaLayout({
                     ))}
                 </optgroup>
               ))}
-            </select>
+            </Select>
           </label>
           {bairros.length > 1 && (
             <label className="flex-1">
-              <span className="mb-1 block text-xs font-medium text-slate-600">Bairro</span>
-              <select
+              <span className="mb-1 block text-caption font-medium text-text-muted">Bairro</span>
+              <Select
                 key={regiao}
                 name="bairro"
                 form={FORM_ID}
-                defaultValue={regiao === filtros.local ? filtros.bairro ?? "" : ""}
+                defaultValue={regiao === filtros.local ? (filtros.bairro ?? "") : ""}
                 onChange={() => enviar()}
-                className={SELECT}
               >
                 <option value="">Todos os bairros</option>
                 {bairros.map((b) => (
@@ -120,82 +104,80 @@ export function BuscaLayout({
                     {b.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
-          <button
-            type="button"
-            onClick={() => setGavetaAberta(true)}
-            className={`${BOTAO_SECUNDARIO} text-sm lg:hidden`}
-          >
-            <IconeFiltros />
+          <Button variant="secondary" onClick={() => setGavetaAberta(true)} className="lg:hidden">
+            <Icon icon={SlidersHorizontal} />
             Filtros
             {qtdFiltros > 0 && (
-              <span className="grid size-5 place-items-center rounded-full bg-marca-700 text-xs text-white">
+              <span className="grid size-6 place-items-center rounded-pill bg-primary text-caption text-white">
                 {qtdFiltros}
               </span>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="mt-4 lg:mt-0 lg:grid lg:grid-cols-[17rem_1fr] lg:gap-8">
-        {/* Filtros: gaveta no celular, barra lateral no desktop */}
-        <aside
-          aria-label="Filtros"
-          className={
-            gavetaAberta
-              ? "fixed inset-0 z-50 flex flex-col bg-white lg:static lg:z-auto"
-              : "hidden lg:block"
+        {/* Filtros: bottom sheet no celular, barra lateral no desktop */}
+        <Sheet
+          open={gavetaAberta}
+          onClose={fecharGaveta}
+          title="Filtros"
+          estaticoNoDesktop
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setGavetaAberta(false);
+                  startTransition(() => router.push(regiao ? `/buscar?local=${regiao}` : "/buscar"));
+                }}
+              >
+                Limpar
+              </Button>
+              <Button type="submit" form={FORM_ID} className="flex-1">
+                Ver resultados
+              </Button>
+            </>
           }
         >
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 lg:hidden">
-            <h2 className="text-base font-semibold">Filtros</h2>
-            <button
-              type="button"
-              onClick={() => setGavetaAberta(false)}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-              aria-label="Fechar filtros"
-            >
-              <IconeFechar className="text-xl" />
-            </button>
-          </div>
-
           <form
             id={FORM_ID}
             ref={formRef}
             action="/buscar"
+            aria-label="Filtros"
             onSubmit={(e) => {
               e.preventDefault();
               enviar();
             }}
             onChange={() => noDesktop() && enviar()}
-            className="flex-1 space-y-6 overflow-y-auto px-4 py-5 lg:sticky lg:top-6 lg:overflow-visible lg:px-0 lg:py-0"
+            className="space-y-6 lg:sticky lg:top-6"
           >
             <Grupo titulo="Espécie">
               <div className="flex flex-wrap gap-2">
-                <Pilula name="especie" value="" rotulo="Todas" marcado={!filtros.especie} />
+                <Chip type="radio" name="especie" value="" defaultChecked={!filtros.especie}>
+                  Todas
+                </Chip>
                 {catalogos.especies.map((e) => (
-                  <Pilula
-                    key={e.slug}
-                    name="especie"
-                    value={e.slug}
-                    rotulo={e.slug === "exoticos" ? "Exóticos" : e.nome}
-                    marcado={filtros.especie === e.slug}
-                  />
+                  <Chip key={e.slug} type="radio" name="especie" value={e.slug} defaultChecked={filtros.especie === e.slug}>
+                    {e.slug === "exoticos" ? "Exóticos" : e.nome}
+                  </Chip>
                 ))}
               </div>
             </Grupo>
 
             <Grupo titulo="Serviço" htmlFor="f-servico">
-              <select id="f-servico" name="servico" defaultValue={filtros.servico ?? ""} className={SELECT}>
+              <Select id="f-servico" name="servico" defaultValue={filtros.servico ?? ""}>
                 <option value="">Qualquer serviço</option>
                 {catalogos.servicos.map((s) => (
                   <option key={s.slug} value={s.slug}>
                     {s.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Grupo>
 
             <Grupo titulo="Modalidade">
@@ -205,14 +187,14 @@ export function BuscaLayout({
             </Grupo>
 
             <Grupo titulo="Área de atuação" htmlFor="f-area">
-              <select id="f-area" name="area" defaultValue={filtros.area ?? ""} className={SELECT}>
+              <Select id="f-area" name="area" defaultValue={filtros.area ?? ""}>
                 <option value="">Qualquer área</option>
                 {catalogos.areas.map((a) => (
                   <option key={a.slug} value={a.slug}>
                     {a.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Grupo>
 
             <Grupo titulo="Disponibilidade">
@@ -223,9 +205,13 @@ export function BuscaLayout({
 
             <Grupo titulo="Preço da consulta">
               <div className="flex flex-wrap gap-2">
-                <Pilula name="preco" value="" rotulo="Qualquer" marcado={!filtros.preco} />
+                <Chip type="radio" name="preco" value="" defaultChecked={!filtros.preco}>
+                  Qualquer
+                </Chip>
                 {PRECOS_MAX.map((p) => (
-                  <Pilula key={p} name="preco" value={String(p)} rotulo={`Até R$ ${p}`} marcado={filtros.preco === p} />
+                  <Chip key={p} type="radio" name="preco" value={String(p)} defaultChecked={filtros.preco === p}>
+                    Até R$ {p}
+                  </Chip>
                 ))}
               </div>
             </Grupo>
@@ -237,26 +223,12 @@ export function BuscaLayout({
             </Grupo>
 
             <noscript>
-              <button className={`${BOTAO_PRIMARIO} w-full`}>Aplicar filtros</button>
+              <Button type="submit" block>
+                Aplicar filtros
+              </Button>
             </noscript>
           </form>
-
-          <div className="flex gap-3 border-t border-slate-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:hidden">
-            <button
-              type="button"
-              className={`${BOTAO_SECUNDARIO} flex-1`}
-              onClick={() => {
-                setGavetaAberta(false);
-                startTransition(() => router.push(regiao ? `/buscar?local=${regiao}` : "/buscar"));
-              }}
-            >
-              Limpar
-            </button>
-            <button type="submit" form={FORM_ID} className={`${BOTAO_PRIMARIO} flex-1`}>
-              Ver resultados
-            </button>
-          </div>
-        </aside>
+        </Sheet>
 
         <section
           aria-label="Resultados"
@@ -270,7 +242,7 @@ export function BuscaLayout({
   );
 }
 
-const TITULO_GRUPO = "mb-2 block text-sm font-semibold text-slate-900";
+const TITULO_GRUPO = "mb-2 block text-small font-semibold text-text";
 
 function Grupo({ titulo, htmlFor, children }: { titulo: string; htmlFor?: string; children: ReactNode }) {
   if (htmlFor) {
@@ -291,26 +263,16 @@ function Grupo({ titulo, htmlFor, children }: { titulo: string; htmlFor?: string
   );
 }
 
-function Pilula({ name, value, rotulo, marcado }: { name: string; value: string; rotulo: string; marcado: boolean }) {
-  return (
-    <label className="cursor-pointer">
-      <input type="radio" name={name} value={value} defaultChecked={marcado} className="peer sr-only" />
-      <span className="inline-block rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition-colors peer-checked:border-marca-700 peer-checked:bg-marca-700 peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-marca-700 hover:border-slate-400">
-        {rotulo}
-      </span>
-    </label>
-  );
-}
-
+// Linha de checkbox com alvo de toque de 44px (a linha inteira é clicável).
 function Caixa({ name, value, rotulo, marcado }: { name: string; value: string; rotulo: string; marcado: boolean }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+    <label className="flex min-h-11 cursor-pointer items-center gap-3 text-small text-text">
       <input
         type="checkbox"
         name={name}
         value={value}
         defaultChecked={marcado}
-        className="size-4 rounded border-slate-300 accent-marca-700"
+        className="size-5 rounded-mark border-border-strong accent-primary"
       />
       {rotulo}
     </label>

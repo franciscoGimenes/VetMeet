@@ -11,11 +11,9 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 export default function Inicio() {
   return (
     <>
-      <section className="mx-auto max-w-6xl px-4 pt-8 pb-5 sm:px-6 sm:pt-12 sm:pb-8">
-        <h1 className="max-w-2xl text-3xl font-bold tracking-tight text-balance text-slate-900 sm:text-4xl">
-          Encontre um veterinário perto de você
-        </h1>
-        <p className="mt-3 max-w-2xl text-base text-pretty text-slate-600 sm:text-lg">
+      <section className="mx-auto max-w-6xl px-4 pt-8 pb-6 sm:px-6 sm:pt-12 sm:pb-8">
+        <h1 className="max-w-2xl text-h1 text-balance text-text">Encontre um veterinário perto de você</h1>
+        <p className="mt-3 max-w-2xl text-body text-pretty text-text-muted sm:text-body-lg">
           Clínicas, atendimento em casa e teleorientação no Alto Tietê e na Zona Leste de São Paulo.
         </p>
       </section>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useRef, useState, type ReactNode } from "react";
+import { useActionState, useRef, useState } from "react";
 import { enviarPreCadastro, type EstadoPreCadastro } from "@/app/sou-veterinario/actions";
-import { BOTAO_PRIMARIO } from "@/components/estilos";
+import { Button, Chip, Field, Input, Select, fieldProps } from "@/components/ui";
 import type { Catalogos } from "@/lib/catalogos";
 import { PUBLICAR_PRE_CADASTRO_DIRETO } from "@/lib/mvp";
 import {
@@ -14,9 +14,6 @@ import {
   type CampoPreCadastro,
   type ErrosPreCadastro,
 } from "@/lib/precadastro";
-
-const ENTRADA =
-  "w-full rounded-xl border bg-white px-3 py-2.5 text-base text-slate-900 focus:border-marca-600 focus:outline-2 focus:outline-marca-600/30 aria-invalid:border-red-500 sm:text-sm";
 
 export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
   const [estado, acao, enviando] = useActionState<EstadoPreCadastro, FormData>(enviarPreCadastro, {});
@@ -42,10 +39,7 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
     if (errosCliente) setErrosCliente(validar());
   }
 
-  const props = (campo: CampoPreCadastro) => ({
-    "aria-invalid": erros[campo] ? true : undefined,
-    "aria-describedby": erros[campo] ? `erro-${campo}` : undefined,
-  });
+  const campo = (nome: CampoPreCadastro) => ({ ...fieldProps(nome, { error: erros[nome] }), "data-campo": nome });
 
   return (
     <form
@@ -65,63 +59,42 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
       className="space-y-6"
     >
       {estado.mensagem && (
-        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200 ring-inset">
+        <p role="alert" className="rounded-control bg-error/10 px-4 py-3 text-small text-error-strong ring-1 ring-error/30 ring-inset">
           {estado.mensagem}
         </p>
       )}
 
-      <Campo rotulo="Nome completo" htmlFor="nome" erro={erros.nome} campo="nome">
-        <input
-          id="nome"
-          name="nome"
-          data-campo="nome"
-          autoComplete="name"
-          required
-          maxLength={120}
-          defaultValue={v?.nome}
-          className={`${ENTRADA} border-slate-300`}
-          {...props("nome")}
-        />
-      </Campo>
+      <Field id="nome" label="Nome completo" error={erros.nome}>
+        <Input {...campo("nome")} name="nome" autoComplete="name" required maxLength={120} defaultValue={v?.nome} />
+      </Field>
 
       <div className="grid grid-cols-[1fr_6.5rem] gap-3">
-        <Campo rotulo="Número do CRMV" htmlFor="crmv_numero" erro={erros.crmv_numero} campo="crmv_numero">
-          <input
-            id="crmv_numero"
+        <Field id="crmv_numero" label="Número do CRMV" error={erros.crmv_numero}>
+          <Input
+            {...campo("crmv_numero")}
             name="crmv_numero"
-            data-campo="crmv_numero"
             inputMode="numeric"
             autoComplete="off"
             required
             maxLength={9}
             placeholder="Ex.: 12345"
             defaultValue={v?.crmv_numero}
-            className={`${ENTRADA} border-slate-300`}
-            {...props("crmv_numero")}
           />
-        </Campo>
-        <Campo rotulo="UF" htmlFor="crmv_uf" erro={erros.crmv_uf} campo="crmv_uf">
-          <select
-            id="crmv_uf"
-            name="crmv_uf"
-            data-campo="crmv_uf"
-            defaultValue={v?.crmv_uf ?? "SP"}
-            className={`${ENTRADA} border-slate-300`}
-            {...props("crmv_uf")}
-          >
+        </Field>
+        <Field id="crmv_uf" label="UF" error={erros.crmv_uf}>
+          <Select {...campo("crmv_uf")} name="crmv_uf" defaultValue={v?.crmv_uf ?? "SP"}>
             {UFS.map((uf) => (
               <option key={uf}>{uf}</option>
             ))}
-          </select>
-        </Campo>
+          </Select>
+        </Field>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 sm:gap-3">
-        <Campo rotulo="WhatsApp" htmlFor="whatsapp" erro={erros.whatsapp} campo="whatsapp">
-          <input
-            id="whatsapp"
+        <Field id="whatsapp" label="WhatsApp" error={erros.whatsapp}>
+          <Input
+            {...campo("whatsapp")}
             name="whatsapp"
-            data-campo="whatsapp"
             type="tel"
             inputMode="tel"
             autoComplete="tel-national"
@@ -131,36 +104,23 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
             onInput={(e) => {
               e.currentTarget.value = mascararWhatsApp(e.currentTarget.value);
             }}
-            className={`${ENTRADA} border-slate-300`}
-            {...props("whatsapp")}
           />
-        </Campo>
-        <Campo rotulo="E-mail" htmlFor="email" erro={erros.email} campo="email">
-          <input
-            id="email"
+        </Field>
+        <Field id="email" label="E-mail" error={erros.email}>
+          <Input
+            {...campo("email")}
             name="email"
-            data-campo="email"
             type="email"
             autoComplete="email"
             required
             maxLength={254}
             defaultValue={v?.email}
-            className={`${ENTRADA} border-slate-300`}
-            {...props("email")}
           />
-        </Campo>
+        </Field>
       </div>
 
-      <Campo rotulo="Cidade ou região onde atende" htmlFor="cidade" erro={erros.cidade} campo="cidade">
-        <select
-          id="cidade"
-          name="cidade"
-          data-campo="cidade"
-          required
-          defaultValue={v?.cidade ?? ""}
-          className={`${ENTRADA} border-slate-300`}
-          {...props("cidade")}
-        >
+      <Field id="cidade" label="Cidade ou região onde atende" error={erros.cidade}>
+        <Select {...campo("cidade")} name="cidade" required defaultValue={v?.cidade ?? ""}>
           <option value="" disabled>
             Selecione
           </option>
@@ -182,8 +142,8 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
                 </option>
               ))}
           </optgroup>
-        </select>
-      </Campo>
+        </Select>
+      </Field>
 
       <Opcoes
         legenda="Espécies que atende"
@@ -208,16 +168,15 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
       </div>
 
       <div>
-        <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-slate-700">
+        <label className="flex cursor-pointer items-start gap-3 text-small text-text">
           <input
             type="checkbox"
             name="consentimento"
             value="sim"
-            data-campo="consentimento"
             required
             defaultChecked={v?.consentimento}
-            className="mt-0.5 size-5 shrink-0 rounded border-slate-300 accent-marca-700"
-            {...props("consentimento")}
+            className="mt-0.5 size-5 shrink-0 rounded-mark border-border-strong accent-primary"
+            {...campo("consentimento")}
           />
           {PUBLICAR_PRE_CADASTRO_DIRETO ? (
             <span>
@@ -233,46 +192,17 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
             </span>
           )}
         </label>
-        <Erro campo="consentimento" texto={erros.consentimento} />
+        {erros.consentimento && (
+          <p id="consentimento-erro" className="mt-1.5 text-small text-error-strong">
+            {erros.consentimento}
+          </p>
+        )}
       </div>
 
-      <button type="submit" disabled={enviando} className={`${BOTAO_PRIMARIO} w-full py-3 text-base disabled:opacity-60`}>
+      <Button type="submit" size="lg" block disabled={enviando}>
         {enviando ? "Enviando..." : PUBLICAR_PRE_CADASTRO_DIRETO ? "Publicar meu perfil" : "Enviar pré-cadastro"}
-      </button>
+      </Button>
     </form>
-  );
-}
-
-function Campo({
-  rotulo,
-  htmlFor,
-  erro,
-  campo,
-  children,
-}: {
-  rotulo: string;
-  htmlFor: string;
-  erro?: string;
-  campo: CampoPreCadastro;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-slate-800">
-        {rotulo}
-      </label>
-      {children}
-      <Erro campo={campo} texto={erro} />
-    </div>
-  );
-}
-
-function Erro({ campo, texto }: { campo: CampoPreCadastro; texto?: string }) {
-  if (!texto) return null;
-  return (
-    <p id={`erro-${campo}`} className="mt-1.5 text-sm text-red-700">
-      {texto}
-    </p>
   );
 }
 
@@ -290,26 +220,26 @@ function Opcoes({
   marcados?: string[];
 }) {
   return (
-    <fieldset aria-describedby={erro ? `erro-${campo}` : undefined}>
-      <legend className="mb-2 text-sm font-medium text-slate-800">{legenda}</legend>
+    <fieldset aria-describedby={erro ? `${campo}-erro` : undefined}>
+      <legend className="mb-2 text-small font-medium text-text">{legenda}</legend>
       <div className="flex flex-wrap gap-2">
         {itens.map((item, i) => (
-          <label key={item.slug} className="cursor-pointer">
-            <input
-              type="checkbox"
-              name={campo}
-              value={item.slug}
-              data-campo={i === 0 ? campo : undefined}
-              defaultChecked={marcados?.includes(item.slug)}
-              className="peer sr-only"
-            />
-            <span className="inline-block rounded-full border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-700 transition-colors peer-checked:border-marca-700 peer-checked:bg-marca-700 peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-marca-700">
-              {item.nome}
-            </span>
-          </label>
+          <Chip
+            key={item.slug}
+            name={campo}
+            value={item.slug}
+            defaultChecked={marcados?.includes(item.slug)}
+            dataCampo={i === 0 ? campo : undefined}
+          >
+            {item.nome}
+          </Chip>
         ))}
       </div>
-      <Erro campo={campo} texto={erro} />
+      {erro && (
+        <p id={`${campo}-erro`} className="mt-1.5 text-small text-error-strong">
+          {erro}
+        </p>
+      )}
     </fieldset>
   );
 }

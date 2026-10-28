@@ -1,4 +1,4 @@
-const bloco = "animate-pulse rounded-2xl bg-slate-200/70";
+const bloco = "animate-pulse rounded-card bg-border/70";
 
 export function EsqueletoBusca() {
   return (

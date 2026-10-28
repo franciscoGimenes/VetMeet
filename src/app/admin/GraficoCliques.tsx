@@ -1,4 +1,4 @@
-// Cliques de contato por dia: uma série, uma cor (marca-600, validada), sem
+// Cliques de contato por dia: uma série, uma cor (token chart, validado), sem
 // legenda. Cada coluna inteira é a área de hover/foco da barra; os valores
 // também ficam numa tabela para leitores de tela e para conferência.
 
@@ -18,11 +18,11 @@ export function GraficoCliques({ dias }: { dias: Dia[] }) {
     <figure>
       <div className="relative">
         {/* grade recessiva: topo (máximo) e base */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-slate-200" />
-        <span className="absolute -top-2.5 right-0 bg-white pl-1 text-xs text-slate-500 tabular-nums">{max}</span>
+        <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-border" />
+        <span className="absolute -top-2.5 right-0 bg-surface pl-1 text-caption text-text-muted tabular-nums">{max}</span>
 
         <div
-          className="flex h-44 items-end gap-0.5 border-b border-slate-300"
+          className="flex h-44 items-end gap-0.5 border-b border-border-strong"
           role="img"
           aria-label={`Cliques de contato por dia, de ${dataCurta(dias[0].dia)} a ${dataCurta(dias[n - 1].dia)}`}
         >
@@ -37,14 +37,14 @@ export function GraficoCliques({ dias }: { dias: Dia[] }) {
                 className="group relative flex h-full min-w-0 flex-1 items-end outline-none"
               >
                 <div
-                  className="w-full rounded-t-[4px] bg-marca-600 group-hover:bg-marca-800 group-focus-visible:bg-marca-800"
+                  className="w-full rounded-t-mark bg-chart group-hover:bg-primary-hover group-focus-visible:bg-primary-hover"
                   style={{ height: d.total ? `${(d.total / max) * 100}%` : 0 }}
                 />
                 <div
-                  className={`pointer-events-none absolute bottom-full z-10 mb-2 hidden w-max rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white shadow-lg group-hover:block group-focus-visible:block ${alinhamento}`}
+                  className={`pointer-events-none absolute bottom-full z-10 mb-2 hidden w-max rounded-control bg-text px-2.5 py-1.5 text-caption text-white shadow-overlay group-hover:block group-focus-visible:block ${alinhamento}`}
                 >
-                  <strong className="text-sm tabular-nums">{d.total}</strong> cliques · {dataCurta(d.dia)}
-                  <div className="text-slate-300">
+                  <strong className="text-small font-semibold tabular-nums">{d.total}</strong> cliques · {dataCurta(d.dia)}
+                  <div className="text-border-strong">
                     {d.whatsapp} WhatsApp{d.demo ? ` · ${d.demo} em demo` : ""}
                   </div>
                 </div>
@@ -53,7 +53,7 @@ export function GraficoCliques({ dias }: { dias: Dia[] }) {
           })}
         </div>
 
-        <div className="relative mt-1.5 h-4 text-xs text-slate-500">
+        <div className="relative mt-1.5 h-4 text-caption text-text-muted">
           {marcasX.map((i) => (
             <span
               key={i}
@@ -69,11 +69,11 @@ export function GraficoCliques({ dias }: { dias: Dia[] }) {
         </div>
       </div>
 
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-slate-600 hover:text-slate-900">Ver como tabela</summary>
+      <details className="mt-3 text-small">
+        <summary className="inline-flex min-h-11 cursor-pointer items-center text-text-muted hover:text-text">Ver como tabela</summary>
         <div className="mt-2 max-h-64 overflow-auto">
           <table className="w-full text-left tabular-nums">
-            <thead className="text-xs text-slate-500">
+            <thead className="text-caption text-text-muted">
               <tr>
                 <th className="py-1 font-medium">Dia</th>
                 <th className="py-1 text-right font-medium">Cliques</th>
@@ -81,7 +81,7 @@ export function GraficoCliques({ dias }: { dias: Dia[] }) {
                 <th className="py-1 text-right font-medium">Em demo</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {[...dias].reverse().map((d) => (
                 <tr key={d.dia}>
                   <td className="py-1">{dataCurta(d.dia)}</td>

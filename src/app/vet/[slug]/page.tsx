@@ -1,22 +1,13 @@
+import { ArrowLeft, AtSign, BadgeCheck, House, MapPin, MessageCircle, Video } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { BotaoContato } from "@/components/BotaoContato";
 import { EsqueletoPerfil } from "@/components/Esqueletos";
-import { BOTAO_SECUNDARIO, BOTAO_WHATSAPP, CHIP } from "@/components/estilos";
-import {
-  IconeCasa,
-  IconeConversa,
-  IconeInstagram,
-  IconeLocal,
-  IconeVerificado,
-  IconeVideo,
-  IconeVoltar,
-} from "@/components/icones";
 import { nomeLocal } from "@/components/Resultados";
 import { SeloDemo } from "@/components/SeloDemo";
+import { Badge, ButtonLink, Card, Icon, buttonClasses } from "@/components/ui";
 import { getCatalogos } from "@/lib/catalogos";
 import {
   linkInstagram,
@@ -82,49 +73,47 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
     : vet.isDemo
       ? ""
       : linkWhatsApp(
-        vet.whatsapp,
-        mensagemWhatsApp({
-          nome: vet.nome,
-          servico: filtros.servico,
-          especie: filtros.especie,
-          local: nomeLocal(filtros, catalogos),
-        }),
-      );
+          vet.whatsapp,
+          mensagemWhatsApp({
+            nome: vet.nome,
+            servico: filtros.servico,
+            especie: filtros.especie,
+            local: nomeLocal(filtros, catalogos),
+          }),
+        );
 
   const principal = vet.areas.find((a) => a.principal) ?? vet.areas[0];
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-4 pb-28 sm:px-6 lg:pt-6 lg:pb-16">
-      <Link
-        href={temFiltros(filtros) ? urlBusca(filtros) : "/buscar"}
-        className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900"
-      >
-        <IconeVoltar /> {temFiltros(filtros) ? "Voltar aos resultados" : "Buscar veterinários"}
-      </Link>
+      <ButtonLink href={temFiltros(filtros) ? urlBusca(filtros) : "/buscar"} variant="ghost" className="-ml-4">
+        <Icon icon={ArrowLeft} />
+        {temFiltros(filtros) ? "Voltar aos resultados" : "Buscar veterinários"}
+      </ButtonLink>
 
       {vet.isDemo && (
-        <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200 ring-inset">
+        <p className="mt-4 rounded-control bg-accent-soft px-4 py-3 text-small text-accent-strong">
           Este é um perfil de demonstração: o profissional é fictício e serve para mostrar como o VetMeet funciona.
         </p>
       )}
 
-      <header className="mt-4 flex gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:items-center sm:gap-6 sm:p-6">
+      <Card as="header" padding="lg" className="mt-4 flex gap-4 sm:items-center sm:gap-6">
         <Avatar nome={vet.nome} fotoUrl={vet.fotoUrl} tamanho="lg" />
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{vet.nome}</h1>
-          {principal && <p className="mt-1 text-base text-slate-700">{principal.nome}</p>}
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+          <h1 className="text-h1 text-text">{vet.nome}</h1>
+          {principal && <p className="mt-1 text-body text-text">{principal.nome}</p>}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-text-muted">
             <span>{vet.crmv}</span>
             {vet.crmvVerificado ? (
-              <span className="inline-flex items-center gap-1 font-medium text-marca-800">
-                <IconeVerificado /> CRMV verificado
+              <span className="inline-flex items-center gap-1 font-medium text-primary">
+                <Icon icon={BadgeCheck} size="sm" /> CRMV verificado
               </span>
             ) : (
-              !vet.isDemo && <span className="text-slate-500">(informado pelo profissional)</span>
+              !vet.isDemo && <span>(informado pelo profissional)</span>
             )}
             {vet.anosExperiencia != null && (
               <>
-                <span className="text-slate-300">·</span>
+                <span aria-hidden="true">·</span>
                 <span>
                   {vet.anosExperiencia} {vet.anosExperiencia === 1 ? "ano" : "anos"} de experiência
                 </span>
@@ -137,38 +126,29 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
             </div>
           )}
         </div>
-      </header>
+      </Card>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
         <div className="space-y-6">
           {vet.bio && (
             <Secao titulo="Sobre">
-              <p className="leading-relaxed whitespace-pre-line text-slate-700">{vet.bio}</p>
+              <p className="text-body whitespace-pre-line text-text">{vet.bio}</p>
             </Secao>
           )}
 
           <Secao titulo="Atende">
             <div className="flex flex-wrap gap-2">
               {vet.especies.map((e) => (
-                <span key={e.slug} className={`${CHIP} text-sm`}>
-                  {e.nome}
-                </span>
+                <Badge key={e.slug}>{e.nome}</Badge>
               ))}
             </div>
             {vet.areas.length > 0 && (
               <>
-                <h3 className="mt-5 text-sm font-semibold text-slate-900">Áreas de atuação</h3>
+                <h3 className="mt-5 text-small font-semibold text-text">Áreas de atuação</h3>
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {vet.areas.map((a) => (
-                    <li
-                      key={a.slug}
-                      className={
-                        a.principal
-                          ? "rounded-full bg-marca-50 px-3 py-1 text-sm font-medium text-marca-900 ring-1 ring-marca-200 ring-inset"
-                          : `${CHIP} text-sm`
-                      }
-                    >
-                      {a.nome}
+                    <li key={a.slug}>
+                      <Badge variant={a.principal ? "primary" : "neutral"}>{a.nome}</Badge>
                     </li>
                   ))}
                 </ul>
@@ -184,8 +164,10 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
             <Secao titulo="Formas de pagamento">
               <ul className="flex flex-wrap gap-2">
                 {vet.pagamentos.map((p) => (
-                  <li key={p.slug} className={`${CHIP} text-sm`}>
-                    {p.slug === "parcelamento" && p.parcelasMax ? `Parcelamento em até ${p.parcelasMax}x` : p.nome}
+                  <li key={p.slug}>
+                    <Badge>
+                      {p.slug === "parcelamento" && p.parcelasMax ? `Parcelamento em até ${p.parcelasMax}x` : p.nome}
+                    </Badge>
                   </li>
                 ))}
               </ul>
@@ -198,14 +180,14 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
 
       {/* Celular: WhatsApp sempre à mão ao rolar */}
       {whatsapp !== null && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
           <BotaoContato
             demo={vet.isDemo}
             href={whatsapp}
             evento={evento("whatsapp")}
-            className={`${BOTAO_WHATSAPP} w-full py-3 text-base`}
+            className={buttonClasses({ variant: "whatsapp", size: "lg", block: true })}
           >
-            <IconeConversa className="text-lg" />
+            <Icon icon={MessageCircle} />
             Chamar no WhatsApp
           </BotaoContato>
         </div>
@@ -214,14 +196,15 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
   );
 }
 
-function Secao({ titulo, id, children }: { titulo: string; id?: string; children: ReactNode }) {
+function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
+  const id = `secao-${titulo.toLowerCase().normalize("NFD").replace(/[^a-z]+/g, "-")}`;
   return (
-    <section id={id} aria-labelledby={`${id ?? titulo}-titulo`} className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-      <h2 id={`${id ?? titulo}-titulo`} className="mb-3 text-lg font-semibold text-slate-900">
+    <Card as="section" padding="lg" aria-labelledby={id}>
+      <h2 id={id} className="mb-3 text-h3 text-text">
         {titulo}
       </h2>
       {children}
-    </section>
+    </Card>
   );
 }
 
@@ -235,13 +218,13 @@ function Atendimento({ vet }: { vet: Veterinario }) {
 
   return (
     <Secao titulo="Atendimento">
-      <ul className="space-y-4 text-slate-700">
+      <ul className="space-y-4 text-text">
         {vet.locais.map((l) => (
           <li key={l.id} className="flex gap-3">
-            <IconeLocal className="mt-1 shrink-0 text-lg text-marca-700" />
+            <Icon icon={MapPin} className="mt-0.5 text-primary" />
             <div>
-              <p className="font-medium text-slate-900">{l.nome}</p>
-              <p className="text-sm">
+              <p className="text-body font-medium text-text">{l.nome}</p>
+              <p className="text-small text-text-muted">
                 {[l.endereco, l.bairro?.nome, l.regiao.nome].filter(Boolean).join(" · ")}
               </p>
             </div>
@@ -249,30 +232,28 @@ function Atendimento({ vet }: { vet: Veterinario }) {
         ))}
         {tem("domiciliar") && vet.cobertura.length > 0 && (
           <li className="flex gap-3">
-            <IconeCasa className="mt-1 shrink-0 text-lg text-marca-700" />
+            <Icon icon={House} className="mt-0.5 text-primary" />
             <div>
-              <p className="font-medium text-slate-900">Atendimento em casa</p>
-              <p className="text-sm">{listaNatural(vet.cobertura.map((c) => c.nome))}</p>
+              <p className="text-body font-medium text-text">Atendimento em casa</p>
+              <p className="text-small text-text-muted">{listaNatural(vet.cobertura.map((c) => c.nome))}</p>
             </div>
           </li>
         )}
         {tem("teleorientacao") && (
           <li className="flex gap-3">
-            <IconeVideo className="mt-1 shrink-0 text-lg text-marca-700" />
+            <Icon icon={Video} className="mt-0.5 text-primary" />
             <div>
-              <p className="font-medium text-slate-900">Teleorientação</p>
-              <p className="text-sm">Orientação por videochamada</p>
+              <p className="text-body font-medium text-text">Teleorientação</p>
+              <p className="text-small text-text-muted">Orientação por videochamada</p>
             </div>
           </li>
         )}
       </ul>
       {disponibilidade.length > 0 && (
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-slate-600">Disponível para:</span>
+          <span className="text-small text-text-muted">Disponível para:</span>
           {disponibilidade.map((d) => (
-            <span key={d} className={`${CHIP} text-sm`}>
-              {d}
-            </span>
+            <Badge key={d}>{d}</Badge>
           ))}
         </div>
       )}
@@ -283,23 +264,21 @@ function Atendimento({ vet }: { vet: Veterinario }) {
 function Servicos({ vet, destaque }: { vet: Veterinario; destaque?: string }) {
   return (
     <Secao titulo="Serviços e preços">
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-border">
         {vet.servicos.map((s) => (
           <li
             key={s.slug}
-            className={`flex items-baseline justify-between gap-4 py-2.5 ${
-              s.slug === destaque ? "-mx-3 rounded-lg bg-marca-50 px-3 font-medium" : ""
+            className={`flex items-baseline justify-between gap-4 py-3 text-body ${
+              s.slug === destaque ? "-mx-3 rounded-control bg-primary-soft px-3 font-medium" : ""
             }`}
           >
-            <span className="text-slate-800">{s.nome}</span>
-            <span className="shrink-0 text-right text-slate-900 tabular-nums">
-              {faixaPreco(s.min, s.max) ?? "Sob consulta"}
-            </span>
+            <span className="text-text">{s.nome}</span>
+            <span className="shrink-0 text-right text-text tabular-nums">{faixaPreco(s.min, s.max) ?? "Sob consulta"}</span>
           </li>
         ))}
       </ul>
       {vet.servicos.some((s) => s.slug === "castracao-cao") && (
-        <p className="mt-3 text-xs text-slate-500">Castração de cães varia conforme o porte.</p>
+        <p className="mt-3 text-caption text-text-muted">Castração de cães varia conforme o porte.</p>
       )}
     </Secao>
   );
@@ -315,50 +294,47 @@ function Contato({
   evento: (canal: EventoContato["canal"]) => EventoContato;
 }) {
   return (
-    <section
-      id="contato"
-      aria-labelledby="contato-titulo"
-      className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 lg:sticky lg:top-6"
-    >
-      <h2 id="contato-titulo" className="text-lg font-semibold text-slate-900">
+    <Card as="section" padding="lg" id="contato" aria-labelledby="contato-titulo" className="lg:sticky lg:top-6">
+      <h2 id="contato-titulo" className="text-h3 text-text">
         Contato
       </h2>
       {vet.consulta.min != null && (
-        <p className="mt-1 text-sm text-slate-600">
-          Consulta: <span className="font-semibold text-slate-900">{faixaPreco(vet.consulta.min, vet.consulta.max)}</span>
+        <p className="mt-1 text-small text-text-muted">
+          Consulta: <span className="font-semibold text-text">{faixaPreco(vet.consulta.min, vet.consulta.max)}</span>
         </p>
       )}
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 space-y-2">
         {whatsapp !== null && (
           <BotaoContato
             demo={vet.isDemo}
             href={whatsapp}
             evento={evento("whatsapp")}
-            className={`${BOTAO_WHATSAPP} w-full py-3 text-base`}
+            className={buttonClasses({ variant: "whatsapp", size: "lg", block: true })}
           >
-            <IconeConversa className="text-lg" />
+            <Icon icon={MessageCircle} />
             Chamar no WhatsApp
           </BotaoContato>
         )}
         {vet.instagram && (
           <BotaoContato
             demo={vet.isDemo}
-            href={linkInstagram(vet.instagram)}
+            href={vet.isDemo ? "" : linkInstagram(vet.instagram)}
             evento={evento("instagram")}
-            className={`${BOTAO_SECUNDARIO} w-full text-sm`}
+            className={buttonClasses({ variant: "secondary", block: true })}
           >
-            <IconeInstagram />@{vet.instagram}
+            <Icon icon={AtSign} />
+            Instagram @{vet.instagram}
           </BotaoContato>
         )}
       </div>
 
       {vet.locais.length > 0 && (
-        <ul className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+        <ul className="mt-5 space-y-4 border-t border-border pt-5">
           {vet.locais.map((l) => (
             <li key={l.id}>
-              <p className="text-sm font-medium text-slate-900">{l.nome}</p>
-              <p className="text-sm text-slate-600">
+              <p className="text-small font-medium text-text">{l.nome}</p>
+              <p className="text-small text-text-muted">
                 {[l.endereco, l.bairro?.nome, l.regiao.nome].filter(Boolean).join(", ")}
               </p>
               {/* Sem endereço nem coordenada o Maps só mostraria a cidade: melhor não oferecer. */}
@@ -377,15 +353,16 @@ function Contato({
                         })
                   }
                   evento={evento("maps")}
-                  className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-medium text-marca-800 underline hover:text-marca-900"
+                  className={`${buttonClasses({ variant: "ghost" })} -ml-4 mt-1`}
                 >
-                  <IconeLocal /> Ver no Google Maps
+                  <Icon icon={MapPin} />
+                  Ver no Google Maps
                 </BotaoContato>
               )}
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }

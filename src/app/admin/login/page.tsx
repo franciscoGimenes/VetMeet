@@ -9,8 +9,8 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default function Login({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="mx-auto max-w-sm px-4 py-16 sm:py-24">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Painel VetMeet</h1>
-      <p className="mt-2 text-sm text-slate-600">Enviaremos um link de entrada para o seu e-mail.</p>
+      <h1 className="text-h1 text-text">Painel VetMeet</h1>
+      <p className="mt-2 text-small text-text-muted">Enviaremos um link de entrada para o seu e-mail.</p>
       <div className="mt-6">
         <Suspense>
           <Formulario searchParams={searchParams} />

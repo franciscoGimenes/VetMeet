@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { BOTAO_SECUNDARIO, CHIP } from "@/components/estilos";
+import { Badge, Button, Card, buttonClasses } from "@/components/ui";
 import { getCatalogos, type Catalogos } from "@/lib/catalogos";
 import { DISPONIBILIDADES } from "@/lib/filtros";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +31,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default function PaginaAdmin({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-slate-200/70" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-card bg-border/70" />}>
         <Conteudo searchParams={searchParams} />
       </Suspense>
     </div>
@@ -62,10 +62,12 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
     if (painel.error.code !== "42501") throw new Error(painel.error.message);
     return (
       <div className="mx-auto max-w-md py-16 text-center">
-        <h1 className="text-xl font-semibold text-slate-900">Sem acesso ao painel</h1>
-        <p className="mt-2 text-sm text-slate-600">{user.email} não está na lista de administradores.</p>
+        <h1 className="text-h2 text-text">Sem acesso ao painel</h1>
+        <p className="mt-2 text-small text-text-muted">{user.email} não está na lista de administradores.</p>
         <form action={sair} className="mt-6">
-          <button className={BOTAO_SECUNDARIO}>Sair</button>
+          <Button type="submit" variant="secondary">
+            Sair
+          </Button>
         </form>
       </div>
     );
@@ -80,24 +82,26 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
     <>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Painel</h1>
-          <p className="text-sm text-slate-600">{user.email}</p>
+          <h1 className="text-h1 text-text">Painel</h1>
+          <p className="text-small text-text-muted">{user.email}</p>
         </div>
         <div className="flex items-center gap-3">
-          <nav aria-label="Período" className="flex rounded-xl border border-slate-300 bg-white p-0.5 text-sm">
+          <nav aria-label="Período" className="flex gap-2 rounded-control border border-border-strong bg-surface p-1">
             {PERIODOS.map((d) => (
               <Link
                 key={d}
                 href={`/admin?dias=${d}`}
                 aria-current={d === dias ? "page" : undefined}
-                className="rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-100 aria-[current=page]:bg-marca-700 aria-[current=page]:text-white"
+                className="inline-flex min-h-11 items-center rounded-control px-3 text-small font-medium text-text hover:bg-background aria-[current=page]:bg-primary aria-[current=page]:text-white"
               >
                 {d} dias
               </Link>
             ))}
           </nav>
           <form action={sair}>
-            <button className="text-sm text-slate-600 underline hover:text-slate-900">Sair</button>
+            <Button type="submit" variant="ghost">
+              Sair
+            </Button>
           </form>
         </div>
       </div>
@@ -156,8 +160,8 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
       <Bloco titulo="Veterinários mais contatados" className="mt-6">
         {p.veterinarios.length ? (
           <div className="-mx-5 overflow-x-auto px-5 sm:-mx-6 sm:px-6">
-            <table className="w-full min-w-[32rem] text-left text-sm tabular-nums">
-              <thead className="text-xs text-slate-500">
+            <table className="w-full min-w-[32rem] text-left text-small tabular-nums [&_td]:pr-4 [&_th]:pr-4">
+              <thead className="text-caption text-text-muted">
                 <tr>
                   <th className="py-2 font-medium">Profissional</th>
                   <th className="py-2 text-right font-medium">Cliques</th>
@@ -166,14 +170,18 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                   <th className="py-2 text-right font-medium">No perfil</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {p.veterinarios.map((v) => (
                   <tr key={`${v.slug}-${v.demo}`}>
                     <td className="py-2">
-                      <Link href={`/vet/${v.slug}`} className="font-medium text-slate-900 hover:underline">
+                      <Link href={`/vet/${v.slug}`} className="inline-flex min-h-11 items-center font-medium text-text hover:underline">
                         {nomesVets.get(v.slug) ?? v.slug}
                       </Link>
-                      {v.demo && <span className={`${CHIP} ml-2`}>demo</span>}
+                      {v.demo && (
+                        <span className="ml-2">
+                          <Badge variant="demo">demo</Badge>
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 text-right font-semibold">{v.total}</td>
                     <td className="py-2 text-right">{v.whatsapp}</td>
@@ -194,7 +202,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
         className="mt-6"
         acao={
           lista.length > 0 && (
-            <a href="/admin/pre-cadastro.csv" download className={`${BOTAO_SECUNDARIO} text-sm`}>
+            <a href="/admin/pre-cadastro.csv" download className={buttonClasses({ variant: "secondary" })}>
               Baixar CSV
             </a>
           )
@@ -202,8 +210,8 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
       >
         {lista.length ? (
           <div className="-mx-5 overflow-x-auto px-5 sm:-mx-6 sm:px-6">
-            <table className="w-full min-w-[56rem] text-left text-sm">
-              <thead className="text-xs text-slate-500">
+            <table className="w-full min-w-[56rem] text-left text-small [&_td]:pr-4 [&_th]:pr-4">
+              <thead className="text-caption text-text-muted">
                 <tr>
                   <th className="py-2 font-medium">Data</th>
                   <th className="py-2 font-medium">Nome</th>
@@ -215,18 +223,18 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                   <th className="py-2 font-medium">Modalidades</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 align-top">
+              <tbody className="divide-y divide-border align-top">
                 {lista.map((c) => (
                   <tr key={c.id}>
-                    <td className="py-2 whitespace-nowrap text-slate-600 tabular-nums">
+                    <td className="py-2 whitespace-nowrap text-text-muted tabular-nums">
                       {new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                     </td>
-                    <td className="py-2 font-medium text-slate-900">
+                    <td className="py-2 font-medium text-text">
                       {c.nome}
                       {c.veterinarians?.slug && (
                         <Link
                           href={`/vet/${c.veterinarians.slug}`}
-                          className="ml-2 text-xs font-normal text-marca-800 hover:underline"
+                          className="ml-2 inline-flex min-h-11 items-center text-small font-normal text-primary hover:underline"
                         >
                           ver perfil
                         </Link>
@@ -237,12 +245,12 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                     </td>
                     <td className="py-2">{c.regions?.nome}</td>
                     <td className="py-2 whitespace-nowrap">
-                      <a href={`https://wa.me/${c.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-marca-800 hover:underline">
+                      <a href={`https://wa.me/${c.whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary hover:underline">
                         {formatarTelefone(c.whatsapp)}
                       </a>
                     </td>
                     <td className="py-2">
-                      <a href={`mailto:${c.email}`} className="text-marca-800 hover:underline">
+                      <a href={`mailto:${c.email}`} className="inline-flex min-h-11 items-center text-primary hover:underline">
                         {c.email}
                       </a>
                     </td>
@@ -302,13 +310,13 @@ function formatarTelefone(numero: string) {
 
 function Numero({ rotulo, valor, detalhe }: { rotulo: string; valor: number; detalhe: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <p className="text-sm text-slate-600">{rotulo}</p>
-      <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900 tabular-nums">
+    <Card padding="lg">
+      <p className="text-small text-text-muted">{rotulo}</p>
+      <p className="mt-1 text-h1 text-text tabular-nums">
         {valor.toLocaleString("pt-BR")}
       </p>
-      <p className="mt-1 text-xs text-slate-500">{detalhe}</p>
-    </div>
+      <p className="mt-1 text-caption text-text-muted">{detalhe}</p>
+    </Card>
   );
 }
 
@@ -324,13 +332,13 @@ function Bloco({
   children: ReactNode;
 }) {
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 ${className}`}>
+    <Card as="section" padding="lg" className={className}>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-base font-semibold text-slate-900">{titulo}</h2>
+        <h2 className="text-body font-semibold text-text">{titulo}</h2>
         {acao}
       </div>
       {children}
-    </section>
+    </Card>
   );
 }
 
@@ -342,15 +350,15 @@ function ListaBarras({ itens }: { itens: { rotulo: string; total: number; nota?:
     <ol className="space-y-2.5">
       {itens.map((i) => (
         <li key={i.rotulo}>
-          <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="min-w-0 truncate text-slate-800">{i.rotulo}</span>
-            <span className="shrink-0 text-slate-900 tabular-nums">
+          <div className="flex items-baseline justify-between gap-3 text-small">
+            <span className="min-w-0 truncate text-text">{i.rotulo}</span>
+            <span className="shrink-0 text-text tabular-nums">
               <strong>{i.total}</strong>
-              {i.nota && <span className="ml-2 text-xs text-slate-500">{i.nota}</span>}
+              {i.nota && <span className="ml-2 text-caption text-text-muted">{i.nota}</span>}
             </span>
           </div>
-          <div className="mt-1 h-1.5 rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-marca-600" style={{ width: `${(i.total / max) * 100}%` }} />
+          <div className="mt-1 h-1.5 rounded-pill bg-border">
+            <div className="h-full rounded-pill bg-chart" style={{ width: `${(i.total / max) * 100}%` }} />
           </div>
         </li>
       ))}
@@ -359,5 +367,5 @@ function ListaBarras({ itens }: { itens: { rotulo: string; total: number; nota?:
 }
 
 function Vazio({ children }: { children: ReactNode }) {
-  return <p className="text-sm text-slate-500">{children}</p>;
+  return <p className="text-small text-text-muted">{children}</p>;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui";
 import type { EventoContato } from "@/lib/contato";
 
 // Registra o clique sem bloquear nem atrasar a abertura do link: sendBeacon
@@ -22,6 +23,8 @@ function registrarContato(evento: EventoContato) {
   }
 }
 
+// Recebe as classes prontas (de buttonClasses) porque precisa ser <a> ou <button>
+// conforme o perfil seja real ou demo.
 export function BotaoContato({
   evento,
   href,
@@ -95,21 +98,19 @@ function AvisoDemo({
       onClose={onFechar}
       onClick={(e) => e.target === ref.current && ref.current.close()}
       aria-labelledby="aviso-demo-titulo"
-      className="m-auto w-[min(26rem,calc(100%-2rem))] rounded-2xl bg-white p-0 text-left text-slate-800 shadow-xl backdrop:bg-slate-900/50"
+      className="m-auto w-[min(26rem,calc(100%-2rem))] rounded-card bg-surface p-0 text-left text-text shadow-overlay backdrop:bg-text/50"
     >
       <div className="p-6">
-        <h2 id="aviso-demo-titulo" className="text-lg font-semibold text-slate-900">
+        <h2 id="aviso-demo-titulo" className="text-h3 text-text">
           Perfil de demonstração
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+        <p className="mt-2 text-small text-text-muted">
           Este profissional é fictício e foi criado para mostrar como o VetMeet funciona.
           Por isso, nenhum contato é enviado.
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">{TEXTO_CANAL[canal]}</p>
+        <p className="mt-2 text-small text-text-muted">{TEXTO_CANAL[canal]}</p>
         <form method="dialog" className="mt-6 flex justify-end">
-          <button className="rounded-xl bg-marca-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-marca-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca-700">
-            Entendi
-          </button>
+          <Button type="submit">Entendi</Button>
         </form>
       </div>
     </dialog>

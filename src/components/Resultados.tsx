@@ -1,7 +1,7 @@
+import { X } from "lucide-react";
 import Link from "next/link";
 import { CardVeterinario, type ContextoBusca } from "@/components/CardVeterinario";
-import { BOTAO_SECUNDARIO } from "@/components/estilos";
-import { IconeFechar } from "@/components/icones";
+import { ButtonLink, Card, Icon, chipClasses } from "@/components/ui";
 import type { Catalogos } from "@/lib/catalogos";
 import { FILTROS_VAZIOS, filtrosAtivos, urlBusca, type Filtros } from "@/lib/filtros";
 import { buscarVeterinarios, contarVeterinarios, POR_PAGINA } from "@/lib/veterinarios";
@@ -34,10 +34,10 @@ export async function ListaResultados({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 className="text-h3 text-text">
           {titulo ?? (total === 1 ? "1 veterinário encontrado" : `${total} veterinários encontrados`)}
         </h2>
-        {contexto.localNome && <p className="text-sm text-slate-600">em {contexto.localNome}</p>}
+        {contexto.localNome && <p className="text-small text-text-muted">em {contexto.localNome}</p>}
       </div>
 
       <FiltrosAtivos filtros={filtros} catalogos={catalogos} />
@@ -45,11 +45,11 @@ export async function ListaResultados({
       {total === 0 ? (
         <EstadoVazio filtros={filtros} catalogos={catalogos} />
       ) : vets.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
-          <p className="text-slate-700">Esta página não existe.</p>
-          <Link href={urlBusca(filtros)} className={`${BOTAO_SECUNDARIO} mt-4 text-sm`}>
+        <div className="rounded-card border border-dashed border-border-strong p-8 text-center">
+          <p className="text-body text-text">Esta página não existe.</p>
+          <ButtonLink href={urlBusca(filtros)} variant="secondary" className="mt-4">
             Voltar para a primeira página
-          </Link>
+          </ButtonLink>
         </div>
       ) : (
         <>
@@ -74,20 +74,17 @@ function FiltrosAtivos({ filtros, catalogos }: { filtros: Filtros; catalogos: Ca
     <ul className="mb-5 flex flex-wrap items-center gap-2" aria-label="Filtros aplicados">
       {ativos.map((a) => (
         <li key={a.chave}>
-          <Link
-            href={urlBusca(a.sem)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-marca-50 py-1 pr-2 pl-3 text-sm text-marca-900 ring-1 ring-marca-200 ring-inset hover:bg-marca-100"
-          >
+          <Link href={urlBusca(a.sem)} className={chipClasses({ selected: true })}>
             {a.rotulo}
-            <IconeFechar className="text-marca-700" aria-label="remover" />
+            <Icon icon={X} size="sm" label="remover" />
           </Link>
         </li>
       ))}
       {ativos.length > 1 && (
         <li>
-          <Link href="/buscar" className="text-sm text-slate-600 underline hover:text-slate-900">
+          <ButtonLink href="/buscar" variant="ghost">
             Limpar tudo
-          </Link>
+          </ButtonLink>
         </li>
       )}
     </ul>
@@ -96,23 +93,22 @@ function FiltrosAtivos({ filtros, catalogos }: { filtros: Filtros; catalogos: Ca
 
 function Paginacao({ filtros, pagina, totalPaginas }: { filtros: Filtros; pagina: number; totalPaginas: number }) {
   const href = (p: number) => urlBusca(filtros, p > 1 ? { pagina: String(p) } : undefined);
-  const classe = `${BOTAO_SECUNDARIO} text-sm`;
   return (
     <nav aria-label="Paginação" className="mt-8 flex items-center justify-between gap-4">
       {pagina > 1 ? (
-        <Link href={href(pagina - 1)} className={classe} rel="prev">
+        <ButtonLink href={href(pagina - 1)} variant="secondary" rel="prev">
           Anterior
-        </Link>
+        </ButtonLink>
       ) : (
         <span />
       )}
-      <p className="text-sm text-slate-600">
+      <p className="text-small text-text-muted">
         Página {pagina} de {totalPaginas}
       </p>
       {pagina < totalPaginas ? (
-        <Link href={href(pagina + 1)} className={classe} rel="next">
+        <ButtonLink href={href(pagina + 1)} variant="secondary" rel="next">
           Próxima
-        </Link>
+        </ButtonLink>
       ) : (
         <span />
       )}
@@ -142,17 +138,20 @@ async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos
   const nomeRegiao = (slug: string) => catalogos.regioes.find((r) => r.slug === slug)?.nome ?? slug;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-      <h3 className="text-lg font-semibold text-slate-900">Nenhum profissional com todos esses filtros</h3>
-      <p className="mt-1 text-sm text-slate-600">Tente uma destas alternativas:</p>
+    <Card padding="lg">
+      <h3 className="text-h3 text-text">Nenhum profissional com todos esses filtros</h3>
+      <p className="mt-1 text-small text-text-muted">Tente uma destas alternativas:</p>
 
       {sugestoesFiltro.length > 0 && (
         <div className="mt-6">
-          <h4 className="text-sm font-semibold text-slate-900">Afrouxar um filtro</h4>
-          <ul className="mt-2 space-y-1">
+          <h4 className="text-small font-semibold text-text">Afrouxar um filtro</h4>
+          <ul className="mt-2 space-y-2">
             {sugestoesFiltro.map((s) => (
               <li key={s.chave}>
-                <Link href={urlBusca(s.sem)} className="text-sm text-marca-800 underline hover:text-marca-900">
+                <Link
+                  href={urlBusca(s.sem)}
+                  className="inline-flex min-h-11 items-center text-small text-primary underline hover:text-primary-hover"
+                >
                   Sem “{s.rotulo}”: {plural(s.total)}
                 </Link>
               </li>
@@ -163,14 +162,11 @@ async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos
 
       {sugestoesVizinhos.length > 0 && (
         <div className="mt-6">
-          <h4 className="text-sm font-semibold text-slate-900">Buscar em regiões próximas</h4>
+          <h4 className="text-small font-semibold text-text">Buscar em regiões próximas</h4>
           <ul className="mt-2 flex flex-wrap gap-2">
             {sugestoesVizinhos.map((v) => (
               <li key={v.slug}>
-                <Link
-                  href={urlBusca(v.filtros)}
-                  className="inline-flex rounded-full border border-slate-300 px-3 py-1.5 text-sm text-slate-800 hover:bg-slate-50"
-                >
+                <Link href={urlBusca(v.filtros)} className={chipClasses()}>
                   {nomeRegiao(v.slug)} ({v.total})
                 </Link>
               </li>
@@ -179,16 +175,16 @@ async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-wrap gap-2">
         {filtros.local && todaRegiao > 0 && (
-          <Link href={urlBusca({ ...filtros, local: undefined, bairro: undefined })} className={`${BOTAO_SECUNDARIO} text-sm`}>
+          <ButtonLink href={urlBusca({ ...filtros, local: undefined, bairro: undefined })} variant="secondary">
             Buscar em toda a região ({todaRegiao})
-          </Link>
+          </ButtonLink>
         )}
-        <Link href={urlBusca(FILTROS_VAZIOS)} className={`${BOTAO_SECUNDARIO} text-sm`}>
+        <ButtonLink href={urlBusca(FILTROS_VAZIOS)} variant="secondary">
           Limpar todos os filtros
-        </Link>
+        </ButtonLink>
       </div>
-    </div>
+    </Card>
   );
 }

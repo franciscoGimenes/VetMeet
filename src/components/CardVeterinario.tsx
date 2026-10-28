@@ -1,9 +1,9 @@
+import { MapPin, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { BotaoContato } from "@/components/BotaoContato";
-import { BOTAO_SECUNDARIO, BOTAO_WHATSAPP, CHIP } from "@/components/estilos";
-import { IconeConversa, IconeLocal } from "@/components/icones";
 import { SeloDemo } from "@/components/SeloDemo";
+import { Badge, ButtonLink, Card, Icon, buttonClasses } from "@/components/ui";
 import { linkWhatsApp, mensagemWhatsApp } from "@/lib/contato";
 import { filtrosParaLog, filtrosParaParams, type Filtros } from "@/lib/filtros";
 import { faixaPreco, listaNatural } from "@/lib/formato";
@@ -43,61 +43,60 @@ export function CardVeterinario({ vet, contexto }: { vet: Veterinario; contexto:
   const principal = vet.areas.find((a) => a.principal) ?? vet.areas[0];
 
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <Card as="article" padding="md" className="flex flex-col gap-4">
       <div className="flex gap-3">
         <Avatar nome={vet.nome} fotoUrl={vet.fotoUrl} />
         <div className="min-w-0">
-          <h3 className="text-base leading-snug font-semibold text-slate-900">
-            <Link href={hrefPerfil} className="hover:text-marca-800 hover:underline">
+          <h3 className="text-h3 text-text">
+            <Link href={hrefPerfil} className="inline-flex min-h-11 items-center hover:text-primary hover:underline">
               {vet.nome}
             </Link>
           </h3>
-          <p className="mt-0.5 text-sm text-slate-600">
+          <p className="text-small text-text-muted">
             {principal && (
               <>
                 {principal.nome}
-                <span className="text-slate-400"> · </span>
+                <span aria-hidden="true"> · </span>
               </>
             )}
             {vet.crmv}
           </p>
           {vet.isDemo && (
-            <div className="mt-1.5">
+            <div className="mt-2">
               <SeloDemo />
             </div>
           )}
         </div>
       </div>
 
-      <dl className="space-y-2.5 text-sm">
-        <div className="flex items-start gap-2 text-slate-700">
+      <dl className="space-y-3 text-small">
+        <div className="flex items-start gap-2 text-text">
           <dt className="sr-only">Local</dt>
-          <IconeLocal className="mt-0.5 shrink-0 text-slate-400" />
+          <Icon icon={MapPin} size="sm" className="mt-0.5 text-text-muted" />
           <dd>{resumoLocal(vet, filtros.local)}</dd>
         </div>
         <div>
           <dt className="sr-only">Espécies atendidas</dt>
-          <dd className="flex flex-wrap gap-1.5">
+          <dd className="flex flex-wrap gap-2">
             {vet.especies.map((e) => (
-              <span key={e.slug} className={CHIP}>
-                {e.slug === "exoticos" ? "Exóticos" : e.nome}
-              </span>
+              <Badge key={e.slug}>{e.slug === "exoticos" ? "Exóticos" : e.nome}</Badge>
             ))}
           </dd>
         </div>
-        <div className="text-slate-600">
+        <div className="text-text-muted">
           <dt className="sr-only">Modalidades</dt>
           <dd>{listaNatural(vet.modos.map((m) => m.nome))}</dd>
         </div>
         {preco.valor && (
-          <div className="flex items-baseline justify-between gap-2 border-t border-slate-100 pt-2.5">
-            <dt className="text-slate-600">{preco.rotulo}</dt>
-            <dd className="font-semibold text-slate-900">{preco.valor}</dd>
+          <div className="flex items-baseline justify-between gap-2 border-t border-border pt-3">
+            <dt className="text-text-muted">{preco.rotulo}</dt>
+            <dd className="font-semibold text-text">{preco.valor}</dd>
           </div>
         )}
       </dl>
 
-      <div className="mt-auto flex gap-2">
+      {/* Coluna estreita: os botões descem para linhas próprias em vez de espremer o texto. */}
+      <div className="mt-auto flex flex-wrap gap-2">
         {vet.whatsapp && (
           <BotaoContato
             demo={vet.isDemo}
@@ -120,16 +119,16 @@ export function CardVeterinario({ vet, contexto }: { vet: Veterinario; contexto:
               origem: "card",
               filtros: filtrosParaLog(filtros),
             }}
-            className={`${BOTAO_WHATSAPP} flex-1 text-sm`}
+            className={`${buttonClasses({ variant: "whatsapp" })} grow`}
           >
-            <IconeConversa className="text-base" />
+            <Icon icon={MessageCircle} />
             WhatsApp
           </BotaoContato>
         )}
-        <Link href={hrefPerfil} className={`${BOTAO_SECUNDARIO} flex-1 text-sm`}>
+        <ButtonLink href={hrefPerfil} variant="secondary" className="grow">
           Ver perfil
-        </Link>
+        </ButtonLink>
       </div>
-    </article>
+    </Card>
   );
 }

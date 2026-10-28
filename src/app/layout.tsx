@@ -1,17 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
+import { ButtonLink } from "@/components/ui";
 import { SITE_DESCRICAO, SITE_NOME, SITE_URL } from "@/lib/site";
+import { CORES } from "@/lib/tokens";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Fontes servidas pelo próprio site (next/font), sem link externo.
+const inter = Inter({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-jakarta",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -34,29 +41,26 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: "#f8fafc",
+  themeColor: CORES.background,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <body className="flex min-h-full flex-col font-sans">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <Link href="/" className="text-lg font-bold tracking-tight text-marca-800">
+    <html lang="pt-BR" className={`${inter.variable} ${jakarta.variable} h-full`}>
+      <body className="flex min-h-full flex-col">
+        <header className="border-b border-border bg-surface">
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
+            <Link href="/" className="inline-flex min-h-11 items-center text-h3 text-primary">
               VetMeet
             </Link>
-            <nav className="flex items-center gap-4 text-sm font-medium sm:gap-6">
-              <Link href="/buscar" className="text-slate-700 hover:text-slate-900">
+            <nav className="flex items-center gap-2">
+              <ButtonLink href="/buscar" variant="ghost">
                 <span className="sm:hidden">Buscar</span>
                 <span className="hidden sm:inline">Buscar veterinários</span>
-              </Link>
-              <Link
-                href="/sou-veterinario"
-                className="rounded-lg border border-marca-700 px-3 py-1.5 text-marca-800 hover:bg-marca-50"
-              >
+              </ButtonLink>
+              <ButtonLink href="/sou-veterinario" variant="secondary">
                 Sou veterinário
-              </Link>
+              </ButtonLink>
             </nav>
           </div>
         </header>
