@@ -1,24 +1,127 @@
 @import "tailwindcss";
 
-@theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/*
+ * Design system do VetMeet (ver "Design system" no CLAUDE.md).
+ * As escalas padrão do Tailwind de cor, tamanho de fonte, peso, raio e sombra
+ * são zeradas: só existem os tokens abaixo, então valores avulsos não compilam
+ * para nada.
+ */
 
 @theme {
-  --color-marca-50: #f0fdfa;
-  --color-marca-100: #ccfbf1;
-  --color-marca-200: #99f6e4;
-  --color-marca-600: #0d9488;
-  --color-marca-700: #0f766e;
-  --color-marca-800: #115e59;
-  --color-marca-900: #134e4a;
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+  --color-current: currentColor;
 
-  /* Verde escurecido em relação ao da marca WhatsApp para manter contraste com texto branco */
+  --color-primary: #1f6f5c;
+  --color-primary-hover: #185a4b;
+  --color-primary-soft: #e3f1ec;
+  --color-accent: #e08a3c;
+  --color-accent-strong: #a45926;
+  --color-accent-soft: #fbeedf;
+  --color-background: #faf8f4;
+  --color-surface: #ffffff;
+  --color-text: #1e2a27;
+  --color-text-muted: #5f6f6a;
+  --color-border: #e4e0d8;
+  --color-border-strong: #918e89;
+  --color-success: #2f9e6b;
+  --color-success-strong: #268057;
+  --color-warning: #d9a23b;
+  --color-warning-strong: #906c27;
+  --color-error: #c8553d;
+  --color-error-strong: #bc5039;
+  --color-info: #3a7ca5;
+  --color-info-strong: #3878a0;
   --color-whatsapp: #15803d;
-  --color-whatsapp-escuro: #166534;
+  --color-whatsapp-hover: #166534;
+  --color-chart: #16846a;
+
+  --font-*: initial;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --text-*: initial;
+  --font-weight-*: initial;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --radius-*: initial;
+  --radius-mark: 4px;
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+
+  --shadow-*: initial;
+  --shadow-card: 0 1px 2px rgb(30 42 39 / 0.06), 0 1px 3px rgb(30 42 39 / 0.04);
+  --shadow-overlay: 0 12px 32px rgb(30 42 39 / 0.18), 0 2px 6px rgb(30 42 39 / 0.08);
 }
 
-body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+/* Escala tipográfica: cada token carrega família, peso, tamanho e entrelinha. */
+@utility text-display {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 2.25rem;
+  line-height: 2.75rem;
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: 3rem;
+    line-height: 3.5rem;
+  }
+}
+@utility text-h1 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  letter-spacing: -0.015em;
+  @media (width >= 48rem) {
+    font-size: 2.25rem;
+    line-height: 2.75rem;
+  }
+}
+@utility text-h2 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+  @media (width >= 48rem) {
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+  }
+}
+@utility text-h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+}
+@utility text-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+@utility text-body {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+@utility text-small {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+@utility text-caption {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+@layer base {
+  body {
+    @apply bg-background font-sans text-body text-text antialiased;
+  }
+
+  /* Foco sempre visível, igual em todo o site. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
