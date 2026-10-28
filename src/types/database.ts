@@ -321,6 +321,24 @@ export type Database = {
           },
         ]
       }
+      vet_waitlist_tentativas: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          ip_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          ip_hash?: string
+        }
+        Relationships: []
+      }
       veterinarian_attendance_modes: {
         Row: {
           attendance_mode_id: number
@@ -607,6 +625,14 @@ export type Database = {
           p_servico?: string
         }
         Returns: Json
+      }
+      pre_cadastro_permitido: {
+        Args: {
+          p_ip_hash: string
+          p_janela_minutos?: number
+          p_limite?: number
+        }
+        Returns: boolean
       }
     }
     Enums: {
