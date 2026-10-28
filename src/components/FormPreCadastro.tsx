@@ -4,6 +4,7 @@ import { useActionState, useRef, useState, type ReactNode } from "react";
 import { enviarPreCadastro, type EstadoPreCadastro } from "@/app/sou-veterinario/actions";
 import { BOTAO_PRIMARIO } from "@/components/estilos";
 import type { Catalogos } from "@/lib/catalogos";
+import { PUBLICAR_PRE_CADASTRO_DIRETO } from "@/lib/mvp";
 import {
   CAMPO_HONEYPOT,
   lerFormulario,
@@ -218,17 +219,25 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
             className="mt-0.5 size-5 shrink-0 rounded border-slate-300 accent-marca-700"
             {...props("consentimento")}
           />
-          <span>
-            Autorizo o VetMeet a guardar estes dados para entrar em contato comigo sobre o cadastro na
-            plataforma, conforme a LGPD. Posso pedir a exclusão a qualquer momento respondendo a uma de
-            nossas mensagens.
-          </span>
+          {PUBLICAR_PRE_CADASTRO_DIRETO ? (
+            <span>
+              Autorizo o VetMeet a publicar meu perfil com nome, CRMV, WhatsApp, cidade, espécies e
+              modalidades, e a guardar meu e-mail (que não aparece no site) para contato, conforme a LGPD.
+              Posso pedir a retirada do perfil e a exclusão dos dados a qualquer momento.
+            </span>
+          ) : (
+            <span>
+              Autorizo o VetMeet a guardar estes dados para entrar em contato comigo sobre o cadastro na
+              plataforma, conforme a LGPD. Posso pedir a exclusão a qualquer momento respondendo a uma de
+              nossas mensagens.
+            </span>
+          )}
         </label>
         <Erro campo="consentimento" texto={erros.consentimento} />
       </div>
 
       <button type="submit" disabled={enviando} className={`${BOTAO_PRIMARIO} w-full py-3 text-base disabled:opacity-60`}>
-        {enviando ? "Enviando..." : "Enviar pré-cadastro"}
+        {enviando ? "Enviando..." : PUBLICAR_PRE_CADASTRO_DIRETO ? "Publicar meu perfil" : "Enviar pré-cadastro"}
       </button>
     </form>
   );

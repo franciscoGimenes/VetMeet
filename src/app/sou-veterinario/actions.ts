@@ -1,17 +1,21 @@
 "use server";
 
 import { createHmac } from "node:crypto";
+import { updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCatalogos } from "@/lib/catalogos";
+import { PUBLICAR_PRE_CADASTRO_DIRETO } from "@/lib/mvp";
 import {
   CAMPO_HONEYPOT,
   lerFormulario,
+  slugDoNome,
   validarPreCadastro,
   type DadosPreCadastro,
   type ErrosPreCadastro,
 } from "@/lib/precadastro";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { TAG_VETERINARIOS } from "@/lib/veterinarios";
 
 export type EstadoPreCadastro = {
   erros?: ErrosPreCadastro;
@@ -71,21 +75,54 @@ export async function enviarPreCadastro(
     };
   }
 
-  const { error } = await admin.from("vet_waitlist").insert({
-    nome: v.nome,
-    crmv_numero: v.crmv_numero,
-    crmv_uf: v.crmv_uf,
-    whatsapp: v.whatsapp,
-    email: v.email,
-    region_id: catalogos.regioes.find((r) => r.slug === v.cidade)!.id,
-    especies: v.especies,
-    modalidades: v.modalidades,
-    consentimento_lgpd: true,
-  });
+  // Perfil real com o mesmo CRMV já publicado: o banco recusaria (CRMV é único
+  // entre perfis reais), então avisamos no campo antes de gravar qualquer coisa.
+  if (PUBLICAR_PRE_CADASTRO_DIRETO) {
+    const { data: existente } = await admin
+      .from("veterinarians")
+      .select("id")
+      .eq("crmv_numero", v.crmv_numero)
+      .eq("crmv_uf", v.crmv_uf)
+      .eq("is_demo", false)
+      .maybeSingle();
+    if (existente) {
+      return { erros: { crmv_numero: "Já existe um perfil publicado com este CRMV." }, valores: dados };
+    }
+  }
+
+  const { data: registro, error } = await admin
+    .from("vet_waitlist")
+    .insert({
+      nome: v.nome,
+      crmv_numero: v.crmv_numero,
+      crmv_uf: v.crmv_uf,
+      whatsapp: v.whatsapp,
+      email: v.email,
+      region_id: catalogos.regioes.find((r) => r.slug === v.cidade)!.id,
+      especies: v.especies,
+      modalidades: v.modalidades,
+      consentimento_lgpd: true,
+    })
+    .select("id")
+    .single();
   if (error) {
     console.error("pré-cadastro (insert):", error.message);
     return { mensagem: FALHA, valores: dados };
   }
 
-  redirect("/sou-veterinario/confirmado");
+  if (!PUBLICAR_PRE_CADASTRO_DIRETO) redirect("/sou-veterinario/confirmado");
+
+  // MVP: publica o perfil na hora. Se falhar, o cadastro já está salvo e a
+  // pessoa vê a confirmação sem o link do perfil (dá para publicar depois).
+  const { data: slug, error: erroPerfil } = await admin.rpc("publicar_pre_cadastro", {
+    p_waitlist_id: registro.id,
+    p_slug: slugDoNome(v.nome),
+  });
+  if (erroPerfil) {
+    console.error("pré-cadastro (perfil):", erroPerfil.message);
+    redirect("/sou-veterinario/confirmado");
+  }
+
+  updateTag(TAG_VETERINARIOS);
+  redirect(`/sou-veterinario/confirmado?perfil=${encodeURIComponent(slug)}`);
 }

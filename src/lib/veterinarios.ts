@@ -1,8 +1,11 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
 import type { Filtros } from "@/lib/filtros";
 
 export const POR_PAGINA = 12;
+
+// Tag de todos os dados de veterinários em cache; invalidada quando um perfil é publicado.
+export const TAG_VETERINARIOS = "veterinarios";
 
 const SELECT_VET = `
   id, slug, nome_exibicao, crmv_numero, crmv_uf, crmv_verificado, bio, foto_url,
@@ -142,6 +145,7 @@ async function rpcBusca(f: Filtros, limite: number, offset: number) {
 export async function buscarVeterinarios(f: Filtros, pagina: number) {
   "use cache";
   cacheLife("minutes");
+  cacheTag(TAG_VETERINARIOS);
 
   const { total, ids } = await rpcBusca(f, POR_PAGINA, (pagina - 1) * POR_PAGINA);
   if (!ids.length) return { total, vets: [] };
@@ -155,12 +159,14 @@ export async function buscarVeterinarios(f: Filtros, pagina: number) {
 export async function contarVeterinarios(f: Filtros) {
   "use cache";
   cacheLife("minutes");
+  cacheTag(TAG_VETERINARIOS);
   return (await rpcBusca(f, 0, 0)).total;
 }
 
 export async function getVeterinario(slug: string) {
   "use cache";
   cacheLife("minutes");
+  cacheTag(TAG_VETERINARIOS);
 
   const { data, error } = await consultaVets().eq("slug", slug).maybeSingle();
   if (error) throw new Error(`Falha ao carregar perfil: ${error.message}`);

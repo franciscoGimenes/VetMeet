@@ -1,13 +1,15 @@
 import type { MetadataRoute } from "next";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { getCatalogos } from "@/lib/catalogos";
 import { SITE_URL } from "@/lib/site";
 import { createPublicClient } from "@/lib/supabase/public";
+import { TAG_VETERINARIOS } from "@/lib/veterinarios";
 
 // Perfis reais ativos. Demos ficam de fora: são noindex.
 async function perfisReais() {
   "use cache";
   cacheLife("hours");
+  cacheTag(TAG_VETERINARIOS);
   const { data } = await createPublicClient()
     .from("veterinarians")
     .select("slug, updated_at")

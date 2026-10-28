@@ -141,5 +141,18 @@ export function lerFormulario(form: FormData): DadosPreCadastro {
   };
 }
 
+// "Dra. Ana Lúcia Souza" -> "dra-ana-lucia-souza" (endereço do perfil público).
+export function slugDoNome(nome: string) {
+  const slug = nome
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .replace(/-+$/, "");
+  return slug || "veterinario";
+}
+
 // Nome do campo-armadilha: invisível para pessoas, preenchido por robôs.
 export const CAMPO_HONEYPOT = "empresa_site";

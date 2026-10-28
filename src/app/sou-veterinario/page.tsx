@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormPreCadastro } from "@/components/FormPreCadastro";
 import { getCatalogos } from "@/lib/catalogos";
+import { PUBLICAR_PRE_CADASTRO_DIRETO } from "@/lib/mvp";
 
 export const metadata: Metadata = {
   title: "Sou veterinário",
@@ -21,7 +22,9 @@ export default function SouVeterinario() {
         Mostre seu trabalho para tutores da sua região
       </h1>
       <p className="mt-3 text-base text-pretty text-slate-600">
-        Faça o pré-cadastro e avisaremos quando seu perfil puder ir ao ar no VetMeet.
+        {PUBLICAR_PRE_CADASTRO_DIRETO
+          ? "Cadastre-se e seu perfil aparece na busca do VetMeet na hora. Seu e-mail não fica visível no site."
+          : "Faça o pré-cadastro e avisaremos quando seu perfil puder ir ao ar no VetMeet."}
       </p>
       <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-8">
         <Suspense>
