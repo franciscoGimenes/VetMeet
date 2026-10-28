@@ -11,7 +11,9 @@ Objetivo: colocar na mão de usuários reais para validar a ideia. Escopo enxuto
 Região inicial: **Alto Tietê + Zona Leste de São Paulo**.
 
 ### Dentro do escopo do MVP
+- Tela inicial (landing)
 - Busca pública de veterinários com filtros
+- Busca por nome
 - Página de perfil do veterinário
 - Contato via WhatsApp (link wa.me) com registro do clique
 - Formulário de pré-cadastro para veterinários reais (lista de espera)
@@ -29,6 +31,101 @@ Região inicial: **Alto Tietê + Zona Leste de São Paulo**.
 - Supabase (Postgres) com migrations SQL versionadas em `supabase/migrations`
 - Seed em `supabase/seed.sql` (ou script TS equivalente)
 - Deploy alvo: Vercel
+
+## Design system
+
+Tokens definidos no Tailwind (`src/app/globals.css`, blocos `@theme` e `@utility`).
+Nos componentes: nunca hex, px, font-size ou font-weight avulsos; só tokens.
+Componentes base em `src/components/ui`; as telas usam esses componentes em vez de
+reestilizar elementos soltos.
+
+### Cores
+| Token | Valor | Uso |
+|---|---|---|
+| primary | #1F6F5C | ações principais, links, foco (verde sálvia: saúde, confiança) |
+| primary-hover | #185A4B | hover/pressionado de primary |
+| primary-soft | #E3F1EC | fundos de destaque, chip selecionado |
+| accent | #E08A3C | fundos e destaques com texto escuro por cima (caramelo: acolhimento, pets) |
+| accent-strong | #A45926 | texto e ícone em tom caramelo |
+| accent-soft | #FBEEDF | fundo do selo de demonstração e destaques suaves |
+| background | #FAF8F4 | fundo da página (off-white quente) |
+| surface | #FFFFFF | cards, campos, sheets |
+| text | #1E2A27 | texto principal |
+| text-muted | #5F6F6A | texto secundário |
+| border | #E4E0D8 | divisórias e contorno de cards |
+| border-strong | #918E89 | contorno de inputs, selects e checkboxes (3:1) |
+| success / success-strong | #2F9E6B / #268057 | base: fundo, ícone, borda · strong: texto |
+| warning / warning-strong | #D9A23B / #906C27 | idem |
+| error / error-strong | #C8553D / #BC5039 | idem |
+| info / info-strong | #3A7CA5 / #3878A0 | idem |
+| whatsapp / whatsapp-hover | #15803D / #166534 | só o botão de WhatsApp |
+| chart | #16846A | marcas de gráfico com uma série (mesmo matiz de primary, com saturação suficiente: validado com a skill dataviz) |
+
+Regras:
+- `accent` nunca é cor de texto sobre fundo claro (2,67:1). Texto sobre `accent` é sempre `text`.
+- Status: a cor base nunca é texto; texto usa `*-strong`. Status sempre com ícone + rótulo,
+  nunca só cor.
+- Selo "Perfil de demonstração": fundo `accent-soft`, texto `accent-strong`.
+- Classes do Tailwind: `text-text`, `text-text-muted`, `bg-background`, `bg-surface`,
+  `border-border` etc.
+
+Contraste validado (WCAG AA, texto ≥ 4,5:1; contornos de controle ≥ 3:1):
+text sobre background 13,98 · surface 14,83 · primary-soft 12,76 · accent-soft 13,00 · accent 5,56 |
+text-muted sobre background 4,99 · surface 5,29 · primary-soft 4,55 · accent-soft 4,64 |
+branco sobre primary 6,02 · primary-hover 8,07 · whatsapp 5,02 |
+primary sobre surface 6,02 · background 5,68 · primary-soft 5,18 |
+accent-strong sobre accent-soft 4,56 · surface 5,20 · background 4,91 |
+*-strong sobre surface ≥ 4,8 e sobre background ≥ 4,5 | border-strong sobre surface 3,26.
+Reprovados (não usar): accent como texto (2,67), branco sobre accent (2,67), cores base de
+status como texto, border como contorno de campo (1,32).
+
+### Tipografia
+Fontes via `next/font` (sem link externo):
+- Títulos: Plus Jakarta Sans 600 e 700
+- Texto e interface: Inter 400, 500 e 600
+
+Escala (cada token já define família, peso, tamanho e entrelinha):
+| Token | Mobile | Desktop (≥ 768px) | Fonte e peso |
+|---|---|---|---|
+| display | 36/44 | 48/56 | Jakarta 700 |
+| h1 | 28/36 | 36/44 | Jakarta 700 |
+| h2 | 22/30 | 28/36 | Jakarta 600 |
+| h3 | 18/26 | 18/26 | Jakarta 600 |
+| body-lg | 18/28 | 18/28 | Inter 400 |
+| body | 16/24 | 16/24 | Inter 400 |
+| small | 14/20 | 14/20 | Inter 400 |
+| caption | 12/16 | 12/16 | Inter 400 |
+
+- Ênfase dentro de body/small/caption: só `font-medium` (500) e `font-semibold` (600).
+- Proibido `text-[..]`, `text-sm`/`text-lg` etc. e `font-bold`/`font-[..]` fora destes tokens.
+- Campos de formulário usam `body` (16px) no celular, para o iOS não dar zoom ao focar.
+
+### Forma, sombra e espaço
+- Raio: `rounded-control` 12px (botões, inputs, selects) · `rounded-card` 16px (cards, sheet,
+  dialog) · `rounded-pill` (chips, badges) · `rounded-mark` 4px (só marcas de gráfico).
+- Sombra: `shadow-card` (cards em repouso) · `shadow-overlay` (sheet, dialog, tooltip).
+- Espaçamento: escala de 4px do Tailwind, sem valores arbitrários. Margem lateral da página
+  16px (mobile) / 24px (desktop); padding de card 16px / 24px; espaço entre seções 24px / 32px.
+
+### Toque e acessibilidade
+- Todo alvo clicável tem no mínimo 44×44px e fica a pelo menos 8px de outro alvo.
+  Exceção: links dentro de texto corrido (permitido pelo WCAG 2.5.8).
+- Foco sempre visível: anel de 2px em `primary` com 2px de afastamento (`focus-visible`).
+- Nunca remover outline sem pôr o anel no lugar.
+
+### Componentes base (`src/components/ui`)
+Button (primary, secondary, ghost, whatsapp; tamanhos md 44px e lg 52px), Chip (selecionável),
+Input, Select, Card, Badge, Sheet (bottom sheet no celular). Variações novas entram no
+componente, não na tela.
+
+### Ícones
+Só `lucide-react`, sempre pelo componente `Icon` de `src/components/ui`. Tamanho padrão 20px,
+traço 2. Use 16px dentro de texto small/caption e 24px em destaques. Sem SVG desenhado à mão
+nos componentes. A lucide 1.x não tem ícones de marca: WhatsApp usa `MessageCircle` e
+Instagram usa `AtSign`, sempre com o nome escrito ao lado.
+
+### Arquivos de imagem
+Fotos em `public/images/`, ilustrações em `public/illustrations/`.
 
 ## Modelo de dados (base)
 Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normalização):
