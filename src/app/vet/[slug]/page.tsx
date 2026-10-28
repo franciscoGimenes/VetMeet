@@ -37,9 +37,19 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const vet = await getVeterinario(slug);
   if (!vet) return { title: "Perfil não encontrado" };
   const principal = vet.areas.find((a) => a.principal)?.nome;
+  const titulo = principal ? `${vet.nome}, ${principal}` : vet.nome;
+  const onde = vet.locais[0]?.regiao.nome ?? vet.cobertura[0]?.nome;
+  const descricao = vet.bio
+    ? vet.bio.length > 160
+      ? `${vet.bio.slice(0, 157).trimEnd()}...`
+      : vet.bio
+    : `${vet.nome}${onde ? ` atende em ${onde}` : ""}. Veja serviços, preços e fale pelo WhatsApp.`;
+  const url = `/vet/${vet.slug}`;
   return {
-    title: principal ? `${vet.nome}, ${principal}` : vet.nome,
-    description: vet.bio?.slice(0, 160),
+    title: titulo,
+    description: descricao,
+    alternates: { canonical: url },
+    openGraph: { type: "profile", title: titulo, description: descricao, url },
     // Perfis fictícios não devem aparecer em buscadores.
     robots: vet.isDemo ? { index: false, follow: false } : undefined,
   };

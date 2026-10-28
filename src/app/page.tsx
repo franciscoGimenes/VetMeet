@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { BuscaLayout } from "@/components/BuscaLayout";
 import { EsqueletoBusca } from "@/components/Esqueletos";
 import { ListaResultados } from "@/components/Resultados";
 import { getCatalogos } from "@/lib/catalogos";
 import { FILTROS_VAZIOS } from "@/lib/filtros";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default function Inicio() {
   return (

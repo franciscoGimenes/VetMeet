@@ -6,6 +6,12 @@ import { getCatalogos } from "@/lib/catalogos";
 export const metadata: Metadata = {
   title: "Sou veterinário",
   description: "Faça o pré-cadastro e apareça para tutores do Alto Tietê e da Zona Leste de São Paulo.",
+  alternates: { canonical: "/sou-veterinario" },
+  openGraph: {
+    title: "Sou veterinário | VetMeet",
+    description: "Faça o pré-cadastro e apareça para tutores do Alto Tietê e da Zona Leste de São Paulo.",
+    url: "/sou-veterinario",
+  },
 };
 
 export default function SouVeterinario() {

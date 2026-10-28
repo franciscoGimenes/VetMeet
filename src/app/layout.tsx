@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { SITE_DESCRICAO, SITE_NOME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,12 +15,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "VetMeet: veterinários no Alto Tietê e Zona Leste",
     template: "%s | VetMeet",
   },
-  description:
-    "Encontre médicos-veterinários com clínica própria, atendimento em casa ou teleorientação no Alto Tietê e na Zona Leste de São Paulo.",
+  description: SITE_DESCRICAO,
+  applicationName: SITE_NOME,
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: SITE_NOME,
+    title: "VetMeet: veterinários no Alto Tietê e Zona Leste",
+    description: SITE_DESCRICAO,
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
