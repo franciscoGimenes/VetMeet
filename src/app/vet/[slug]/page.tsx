@@ -85,102 +85,105 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
   const principal = vet.areas.find((a) => a.principal) ?? vet.areas[0];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pt-4 pb-28 sm:px-6 lg:pt-6 lg:pb-16">
-      <ButtonLink href={temFiltros(filtros) ? urlBusca(filtros) : "/buscar"} variant="ghost" className="-ml-4">
-        <Icon icon={ArrowLeft} />
-        {temFiltros(filtros) ? "Voltar aos resultados" : "Buscar veterinários"}
-      </ButtonLink>
-
-      {vet.isDemo && (
-        <p className="mt-4 rounded-control bg-accent-soft px-4 py-3 text-small text-accent-strong">
-          Este é um perfil de demonstração: o profissional é fictício e serve para mostrar como o VetMeet funciona.
-        </p>
-      )}
-
-      <Card as="header" padding="lg" className="mt-4 flex gap-4 sm:items-center sm:gap-6">
-        <Avatar nome={vet.nome} fotoUrl={vet.fotoUrl} tamanho="lg" />
-        <div className="min-w-0">
-          <h1 className="text-h1 text-text">{vet.nome}</h1>
-          {principal && <p className="mt-1 text-body text-text">{principal.nome}</p>}
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-text-muted">
-            <span>{vet.crmv}</span>
-            {vet.crmvVerificado ? (
-              <span className="inline-flex items-center gap-1 font-medium text-primary">
-                <Icon icon={BadgeCheck} size="sm" /> CRMV verificado
-              </span>
-            ) : (
-              !vet.isDemo && <span>(informado pelo profissional)</span>
-            )}
-            {vet.anosExperiencia != null && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>
-                  {vet.anosExperiencia} {vet.anosExperiencia === 1 ? "ano" : "anos"} de experiência
-                </span>
-              </>
-            )}
+    <>
+      <div className="mx-auto w-full max-w-6xl px-4 pt-4 pb-6 sm:px-6 md:pb-8 lg:pt-6 lg:pb-16">
+        <ButtonLink href={temFiltros(filtros) ? urlBusca(filtros) : "/buscar"} variant="ghost" className="-ml-4">
+          <Icon icon={ArrowLeft} />
+          {temFiltros(filtros) ? "Voltar aos resultados" : "Buscar veterinários"}
+        </ButtonLink>
+  
+        {vet.isDemo && (
+          <p className="mt-4 rounded-control bg-accent-soft px-4 py-3 text-small text-accent-strong">
+            Este é um perfil de demonstração: o profissional é fictício e serve para mostrar como o VetMeet funciona.
           </p>
-          {vet.isDemo && (
-            <div className="mt-2">
-              <SeloDemo />
-            </div>
-          )}
-        </div>
-      </Card>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
-        <div className="space-y-6">
-          {vet.bio && (
-            <Secao titulo="Sobre">
-              <p className="text-body whitespace-pre-line text-text">{vet.bio}</p>
+        )}
+  
+        <Card as="header" padding="lg" className="mt-4 flex gap-4 sm:items-center sm:gap-6">
+          <Avatar nome={vet.nome} fotoUrl={vet.fotoUrl} tamanho="lg" />
+          <div className="min-w-0">
+            <h1 className="text-h1 text-text">{vet.nome}</h1>
+            {principal && <p className="mt-1 text-body text-text">{principal.nome}</p>}
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-text-muted">
+              <span>{vet.crmv}</span>
+              {vet.crmvVerificado ? (
+                <span className="inline-flex items-center gap-1 font-medium text-primary">
+                  <Icon icon={BadgeCheck} size="sm" /> CRMV verificado
+                </span>
+              ) : (
+                !vet.isDemo && <span>(informado pelo profissional)</span>
+              )}
+              {vet.anosExperiencia != null && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>
+                    {vet.anosExperiencia} {vet.anosExperiencia === 1 ? "ano" : "anos"} de experiência
+                  </span>
+                </>
+              )}
+            </p>
+            {vet.isDemo && (
+              <div className="mt-2">
+                <SeloDemo />
+              </div>
+            )}
+          </div>
+        </Card>
+  
+        <div className="mt-6 grid gap-6 md:mt-8 md:gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+          <div className="space-y-6 md:space-y-8">
+            {vet.bio && (
+              <Secao slug={vet.slug} titulo="Sobre">
+                <p className="text-body whitespace-pre-line text-text">{vet.bio}</p>
+              </Secao>
+            )}
+  
+            <Secao slug={vet.slug} titulo="Atende">
+              <div className="flex flex-wrap gap-2">
+                {vet.especies.map((e) => (
+                  <Badge key={e.slug}>{e.nome}</Badge>
+                ))}
+              </div>
+              {vet.areas.length > 0 && (
+                <>
+                  <h3 className="mt-5 text-small font-semibold text-text">Áreas de atuação</h3>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {vet.areas.map((a) => (
+                      <li key={a.slug}>
+                        <Badge variant={a.principal ? "primary" : "neutral"}>{a.nome}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </Secao>
-          )}
-
-          <Secao titulo="Atende">
-            <div className="flex flex-wrap gap-2">
-              {vet.especies.map((e) => (
-                <Badge key={e.slug}>{e.nome}</Badge>
-              ))}
-            </div>
-            {vet.areas.length > 0 && (
-              <>
-                <h3 className="mt-5 text-small font-semibold text-text">Áreas de atuação</h3>
-                <ul className="mt-2 flex flex-wrap gap-2">
-                  {vet.areas.map((a) => (
-                    <li key={a.slug}>
-                      <Badge variant={a.principal ? "primary" : "neutral"}>{a.nome}</Badge>
+  
+            <Atendimento vet={vet} />
+  
+            {vet.servicos.length > 0 && <Servicos vet={vet} destaque={filtros.servico} />}
+  
+            {vet.pagamentos.length > 0 && (
+              <Secao slug={vet.slug} titulo="Formas de pagamento">
+                <ul className="flex flex-wrap gap-2">
+                  {vet.pagamentos.map((p) => (
+                    <li key={p.slug}>
+                      <Badge>
+                        {p.slug === "parcelamento" && p.parcelasMax ? `Parcelamento em até ${p.parcelasMax}x` : p.nome}
+                      </Badge>
                     </li>
                   ))}
                 </ul>
-              </>
+              </Secao>
             )}
-          </Secao>
-
-          <Atendimento vet={vet} />
-
-          {vet.servicos.length > 0 && <Servicos vet={vet} destaque={filtros.servico} />}
-
-          {vet.pagamentos.length > 0 && (
-            <Secao titulo="Formas de pagamento">
-              <ul className="flex flex-wrap gap-2">
-                {vet.pagamentos.map((p) => (
-                  <li key={p.slug}>
-                    <Badge>
-                      {p.slug === "parcelamento" && p.parcelasMax ? `Parcelamento em até ${p.parcelasMax}x` : p.nome}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            </Secao>
-          )}
+          </div>
+  
+          <Contato vet={vet} whatsapp={whatsapp} evento={evento} />
         </div>
-
-        <Contato vet={vet} whatsapp={whatsapp} evento={evento} />
       </div>
 
-      {/* Celular: WhatsApp sempre à mão ao rolar */}
+      {/* Celular: WhatsApp sempre à mão ao rolar. Sticky (e não fixed) dentro do
+          <main>: acompanha a tela, mas para no fim do conteúdo, sem cobrir o rodapé. */}
       {whatsapp !== null && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+        <div className="sticky bottom-0 z-40 border-t border-border bg-surface/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
           <BotaoContato
             demo={vet.isDemo}
             href={whatsapp}
@@ -192,12 +195,14 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
           </BotaoContato>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
-function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
-  const id = `secao-${titulo.toLowerCase().normalize("NFD").replace(/[^a-z]+/g, "-")}`;
+// Ids com o slug: com Cache Components o perfil visto antes continua no DOM,
+// escondido, e um id repetido faria o aria-labelledby apontar para ele.
+function Secao({ slug, titulo, children }: { slug: string; titulo: string; children: ReactNode }) {
+  const id = `${slug}-${titulo.toLowerCase().normalize("NFD").replace(/[^a-z]+/g, "-")}`;
   return (
     <Card as="section" padding="lg" aria-labelledby={id}>
       <h2 id={id} className="mb-3 text-h3 text-text">
@@ -217,7 +222,7 @@ function Atendimento({ vet }: { vet: Veterinario }) {
   ].filter((d): d is string => Boolean(d));
 
   return (
-    <Secao titulo="Atendimento">
+    <Secao slug={vet.slug} titulo="Atendimento">
       <ul className="space-y-4 text-text">
         {vet.locais.map((l) => (
           <li key={l.id} className="flex gap-3">
@@ -263,7 +268,7 @@ function Atendimento({ vet }: { vet: Veterinario }) {
 
 function Servicos({ vet, destaque }: { vet: Veterinario; destaque?: string }) {
   return (
-    <Secao titulo="Serviços e preços">
+    <Secao slug={vet.slug} titulo="Serviços e preços">
       <ul className="divide-y divide-border">
         {vet.servicos.map((s) => (
           <li
@@ -294,8 +299,8 @@ function Contato({
   evento: (canal: EventoContato["canal"]) => EventoContato;
 }) {
   return (
-    <Card as="section" padding="lg" id="contato" aria-labelledby="contato-titulo" className="lg:sticky lg:top-6">
-      <h2 id="contato-titulo" className="text-h3 text-text">
+    <Card as="section" padding="lg" aria-labelledby={`${vet.slug}-contato`} className="lg:sticky lg:top-6">
+      <h2 id={`${vet.slug}-contato`} className="text-h3 text-text">
         Contato
       </h2>
       {vet.consulta.min != null && (

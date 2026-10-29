@@ -51,7 +51,7 @@ export async function ListaResultados({
       {total === 0 ? (
         <EstadoVazio filtros={filtros} catalogos={catalogos} />
       ) : vets.length === 0 ? (
-        <div className="rounded-card border border-dashed border-border-strong p-8 text-center">
+        <div className="rounded-card border border-dashed border-border-strong p-4 text-center sm:p-6">
           <p className="text-body text-text">Esta página não existe.</p>
           <ButtonLink href={urlBusca(filtros)} variant="secondary" className="mt-4">
             Voltar para a primeira página

@@ -250,7 +250,7 @@ export default async function Inicio() {
 
       {/* 7. Perguntas frequentes */}
       <Secao titulo="Perguntas frequentes" estreita>
-        <Card padding="none" className="px-4 py-1 sm:px-5">
+        <Card padding="none" className="px-4 py-1 sm:px-6">
           {PERGUNTAS.map((p) => (
             <Disclosure key={p.pergunta} title={p.pergunta}>
               <p className="text-body text-pretty text-text-muted">{p.resposta}</p>

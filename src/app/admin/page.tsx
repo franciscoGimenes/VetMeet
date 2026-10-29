@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
+import { EsqueletoAdmin } from "@/components/Esqueletos";
 import { Badge, Button, Card, buttonClasses } from "@/components/ui";
 import { getCatalogos, type Catalogos } from "@/lib/catalogos";
 import { DISPONIBILIDADES } from "@/lib/filtros";
@@ -31,7 +32,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default function PaginaAdmin({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-card bg-border/70" />}>
+      <Suspense fallback={<EsqueletoAdmin />}>
         <Conteudo searchParams={searchParams} />
       </Suspense>
     </div>
@@ -64,7 +65,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
       <div className="mx-auto max-w-md py-16 text-center">
         <h1 className="text-h2 text-text">Sem acesso ao painel</h1>
         <p className="mt-2 text-small text-text-muted">{user.email} não está na lista de administradores.</p>
-        <form action={sair} className="mt-6">
+        <form action={sair} className="mt-6 md:mt-8">
           <Button type="submit" variant="secondary">
             Sair
           </Button>
@@ -106,7 +107,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-3 md:mt-8">
         <Numero
           rotulo="Cliques de contato"
           valor={p.totais.cliques}
@@ -124,11 +125,11 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
         />
       </div>
 
-      <Bloco titulo="Cliques de contato por dia" className="mt-6">
+      <Bloco titulo="Cliques de contato por dia" className="mt-6 md:mt-8">
         <GraficoCliques dias={p.cliques_por_dia} />
       </Bloco>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 md:mt-8 md:gap-8 lg:grid-cols-2">
         <Bloco titulo="Cidades mais buscadas">
           {p.cidades.length ? (
             <ListaBarras
@@ -157,9 +158,9 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
         </Bloco>
       </div>
 
-      <Bloco titulo="Veterinários mais contatados" className="mt-6">
+      <Bloco titulo="Veterinários mais contatados" className="mt-6 md:mt-8">
         {p.veterinarios.length ? (
-          <div className="-mx-5 overflow-x-auto px-5 sm:-mx-6 sm:px-6">
+          <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
             <table className="w-full min-w-[32rem] text-left text-small tabular-nums [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-caption text-text-muted">
                 <tr>
@@ -199,7 +200,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
 
       <Bloco
         titulo={`Pré-cadastro (${p.totais.pre_cadastros_total})`}
-        className="mt-6"
+        className="mt-6 md:mt-8"
         acao={
           lista.length > 0 && (
             <a href="/admin/pre-cadastro.csv" download className={buttonClasses({ variant: "secondary" })}>
@@ -209,7 +210,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
         }
       >
         {lista.length ? (
-          <div className="-mx-5 overflow-x-auto px-5 sm:-mx-6 sm:px-6">
+          <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
             <table className="w-full min-w-[56rem] text-left text-small [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-caption text-text-muted">
                 <tr>
@@ -335,7 +336,7 @@ function Bloco({
   return (
     <Card as="section" padding="lg" className={className}>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-body font-semibold text-text">{titulo}</h2>
+        <h2 className="text-h3 text-text">{titulo}</h2>
         {acao}
       </div>
       {children}

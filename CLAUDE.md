@@ -106,6 +106,13 @@ Escala (cada token já define família, peso, tamanho e entrelinha):
 - Sombra: `shadow-card` (cards em repouso) · `shadow-overlay` (sheet, dialog, tooltip).
 - Espaçamento: escala de 4px do Tailwind, sem valores arbitrários. Margem lateral da página
   16px (mobile) / 24px (desktop); padding de card 16px / 24px; espaço entre seções 24px / 32px.
+  Ritmo vertical: blocos e cards de uma tela usam `mt-6 md:mt-8` / `gap-6 md:gap-8`; na página
+  inicial cada seção tem `py-6 md:py-8`. `Card padding="lg"` é o padrão (16/24); `md` (16) só em
+  cards de lista.
+- Estados: `src/app/error.tsx` cobre falhas inesperadas; os esqueletos de `Esqueletos.tsx`
+  imitam a forma da tela e têm `min-h-dvh` (sem isso o rodapé pula e o CLS sobe).
+- Barra fixa de ação no celular (perfil): `sticky bottom-0` como irmã do conteúdo dentro do
+  `<main>`, não `fixed`, para não cobrir o rodapé.
 
 ### Toque e acessibilidade
 - Todo alvo clicável tem no mínimo 44×44px e fica a pelo menos 8px de outro alvo.

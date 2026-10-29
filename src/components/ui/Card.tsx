@@ -1,10 +1,11 @@
 import type { ComponentProps, ElementType } from "react";
 import { cn } from "@/lib/cn";
 
+// md: compacto (cards de lista, sempre 16px) · lg: padrão do design system (16px / 24px).
 const PADDING = {
   none: "",
-  md: "p-4 sm:p-5",
-  lg: "p-5 sm:p-6",
+  md: "p-4",
+  lg: "p-4 sm:p-6",
 } as const;
 
 export function cardClasses({ padding = "lg" }: { padding?: keyof typeof PADDING } = {}) {
