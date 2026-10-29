@@ -15,13 +15,18 @@ export type ContextoBusca = {
   localNome?: string;
 };
 
-// Onde o profissional atende, priorizando o local buscado.
-export function resumoLocal(vet: Veterinario, local?: string) {
-  const clinica = local ? vet.locais.find((l) => l.regiao.slug === local) : vet.locais[0];
+// Onde o profissional atende, priorizando os locais buscados.
+export function resumoLocal(vet: Veterinario, locais: string[]) {
+  const buscando = locais.length > 0;
+  const clinica = buscando ? vet.locais.find((l) => locais.includes(l.regiao.slug)) : vet.locais[0];
   if (clinica) return [clinica.bairro?.nome, clinica.regiao.nome].filter(Boolean).join(", ");
 
-  const buscada = vet.cobertura.find((c) => c.slug === local);
-  const cobertura = local ? (buscada ? [buscada, ...vet.cobertura.filter((c) => c !== buscada)] : []) : vet.cobertura;
+  const buscadas = vet.cobertura.filter((c) => locais.includes(c.slug));
+  const cobertura = buscando
+    ? buscadas.length
+      ? [...buscadas, ...vet.cobertura.filter((c) => !buscadas.includes(c))]
+      : []
+    : vet.cobertura;
   if (cobertura.length) {
     const visiveis = cobertura.slice(0, 2).map((c) => c.nome);
     const resto = cobertura.length - visiveis.length;

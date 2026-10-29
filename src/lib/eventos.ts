@@ -11,7 +11,7 @@ export async function registrarBusca(filtros: Filtros, total: number, userAgent:
   try {
     const { error } = await createAdminClient()
       .from("search_events")
-      .insert({ filtros: filtrosParaLog(filtros), local: filtros.local ?? null, total });
+      .insert({ filtros: filtrosParaLog(filtros), local: filtros.local.length ? filtros.local : null, total });
     if (error) console.error("search_events:", error.message);
   } catch (erro) {
     console.error("search_events:", erro);

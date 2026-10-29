@@ -119,31 +119,19 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
         </Field>
       </div>
 
-      <Field id="cidade" label="Cidade ou região onde atende" error={erros.cidade}>
-        <Select {...campo("cidade")} name="cidade" required defaultValue={v?.cidade ?? ""}>
-          <option value="" disabled>
-            Selecione
-          </option>
-          <optgroup label="Alto Tietê">
-            {catalogos.regioes
-              .filter((r) => r.regiao_macro === "alto_tiete")
-              .map((r) => (
-                <option key={r.slug} value={r.slug}>
-                  {r.nome}
-                </option>
-              ))}
-          </optgroup>
-          <optgroup label="Zona Leste de São Paulo">
-            {catalogos.regioes
-              .filter((r) => r.regiao_macro === "zona_leste_sp")
-              .map((r) => (
-                <option key={r.slug} value={r.slug}>
-                  {r.nome}
-                </option>
-              ))}
-          </optgroup>
-        </Select>
-      </Field>
+      <Opcoes
+        legenda="Cidades ou regiões onde atende"
+        campo="regioes"
+        erro={erros.regioes}
+        grupos={[
+          { rotulo: "Alto Tietê", itens: catalogos.regioes.filter((r) => r.regiao_macro === "alto_tiete") },
+          {
+            rotulo: "Zona Leste de São Paulo",
+            itens: catalogos.regioes.filter((r) => r.regiao_macro === "zona_leste_sp"),
+          },
+        ]}
+        marcados={v?.regioes}
+      />
 
       <Opcoes
         legenda="Espécies que atende"
@@ -180,7 +168,7 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
           />
           {PUBLICAR_PRE_CADASTRO_DIRETO ? (
             <span>
-              Autorizo o VetMeet a publicar meu perfil com nome, CRMV, WhatsApp, cidade, espécies e
+              Autorizo o VetMeet a publicar meu perfil com nome, CRMV, WhatsApp, cidades, espécies e
               modalidades, e a guardar meu e-mail (que não aparece no site) para contato, conforme a LGPD.
               Posso pedir a retirada do perfil e a exclusão dos dados a qualquer momento.
             </span>
@@ -206,33 +194,47 @@ export function FormPreCadastro({ catalogos }: { catalogos: Catalogos }) {
   );
 }
 
+type ItemOpcao = { slug: string; nome: string };
+
+// Chips de múltipla escolha; com `grupos`, cada grupo ganha um subtítulo.
 function Opcoes({
   legenda,
   campo,
   erro,
   itens,
+  grupos,
   marcados,
 }: {
   legenda: string;
-  campo: "especies" | "modalidades";
+  campo: "especies" | "modalidades" | "regioes";
   erro?: string;
-  itens: { slug: string; nome: string }[];
+  itens?: ItemOpcao[];
+  grupos?: { rotulo: string; itens: ItemOpcao[] }[];
   marcados?: string[];
 }) {
+  const blocos = grupos ?? [{ rotulo: "", itens: itens ?? [] }];
+  const primeiro = blocos[0]?.itens[0]?.slug;
   return (
     <fieldset aria-describedby={erro ? `${campo}-erro` : undefined}>
       <legend className="mb-2 text-small font-medium text-text">{legenda}</legend>
-      <div className="flex flex-wrap gap-2">
-        {itens.map((item, i) => (
-          <Chip
-            key={item.slug}
-            name={campo}
-            value={item.slug}
-            defaultChecked={marcados?.includes(item.slug)}
-            dataCampo={i === 0 ? campo : undefined}
-          >
-            {item.nome}
-          </Chip>
+      <div className="space-y-3">
+        {blocos.map((b) => (
+          <div key={b.rotulo}>
+            {b.rotulo && <p className="mb-2 text-caption font-semibold text-text-muted">{b.rotulo}</p>}
+            <div className="flex flex-wrap gap-2">
+              {b.itens.map((item) => (
+                <Chip
+                  key={item.slug}
+                  name={campo}
+                  value={item.slug}
+                  defaultChecked={marcados?.includes(item.slug)}
+                  dataCampo={item.slug === primeiro ? campo : undefined}
+                >
+                  {item.nome}
+                </Chip>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       {erro && (

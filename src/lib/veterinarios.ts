@@ -118,8 +118,8 @@ function mapear(v: Linha): Veterinario {
 
 function argsRpc(f: Filtros) {
   return {
-    p_regiao: f.local,
-    p_bairro: f.bairro,
+    p_regioes: f.local,
+    p_bairros: f.bairro,
     p_especie: f.especie,
     p_area: f.area,
     p_servico: f.servico,

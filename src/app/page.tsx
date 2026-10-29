@@ -106,8 +106,8 @@ const PERGUNTAS = [
   {
     pergunta: "Sou veterinário. Como me cadastro?",
     resposta: PUBLICAR_PRE_CADASTRO_DIRETO
-      ? "Toque em “Sou veterinário” e preencha nome, CRMV, WhatsApp, cidade, espécies que atende e forma de atendimento. Seu perfil entra na busca na hora."
-      : "Toque em “Sou veterinário” e preencha nome, CRMV, WhatsApp, cidade, espécies que atende e forma de atendimento. Você entra na lista de espera e avisamos quando seu perfil puder ir ao ar.",
+      ? "Toque em “Sou veterinário” e preencha nome, CRMV, WhatsApp, cidades onde atende, espécies e forma de atendimento. Seu perfil entra na busca na hora."
+      : "Toque em “Sou veterinário” e preencha nome, CRMV, WhatsApp, cidades onde atende, espécies e forma de atendimento. Você entra na lista de espera e avisamos quando seu perfil puder ir ao ar.",
   },
   {
     pergunta: "Os profissionais são verificados?",
@@ -317,7 +317,7 @@ function ListaCidades({ titulo, regioes }: { titulo: string; regioes: Regiao[] }
       <ul className="mt-3 flex flex-wrap gap-2">
         {regioes.map((r) => (
           <li key={r.slug}>
-            <Link href={busca({ local: r.slug })} className={chipClasses()}>
+            <Link href={busca({ local: [r.slug] })} className={chipClasses()}>
               {r.nome}
             </Link>
           </li>

@@ -26,7 +26,7 @@ export async function GET() {
   const [{ data, error }, catalogos] = await Promise.all([
     supabase
       .from("vet_waitlist")
-      .select("created_at, nome, crmv_numero, crmv_uf, whatsapp, email, especies, modalidades, regions(nome)")
+      .select("created_at, nome, crmv_numero, crmv_uf, whatsapp, email, especies, modalidades, regioes")
       .order("created_at", { ascending: true }),
     getCatalogos(),
   ]);
@@ -36,7 +36,7 @@ export async function GET() {
     slugs.map((s) => itens.find((i) => i.slug === s)?.nome ?? s).join(", ");
 
   const linhas = [
-    ["Data", "Nome", "CRMV", "UF", "WhatsApp", "E-mail", "Cidade", "Espécies", "Modalidades"],
+    ["Data", "Nome", "CRMV", "UF", "WhatsApp", "E-mail", "Cidades", "Espécies", "Modalidades"],
     ...(data ?? []).map((c) => [
       new Date(c.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
       c.nome,
@@ -44,7 +44,7 @@ export async function GET() {
       c.crmv_uf,
       c.whatsapp,
       c.email,
-      c.regions?.nome,
+      nomes(c.regioes, catalogos.regioes),
       nomes(c.especies, catalogos.especies),
       nomes(c.modalidades, catalogos.modos),
     ]),

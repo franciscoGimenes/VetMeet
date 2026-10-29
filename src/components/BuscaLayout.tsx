@@ -23,9 +23,10 @@ const ESPERA_CONTAGEM_MS = 250;
 const NOME_MIN = 2;
 
 // Estado dos filtros enquanto a pessoa escolhe (no celular só vale ao tocar em
-// "Ver resultados"). `loc` é "regiao" ou "regiao|bairro".
+// "Ver resultados"). Bairros vêm como "cidade.bairro".
 type Rascunho = {
-  loc: string;
+  local: string[];
+  bairro: string[];
   especie: string;
   servico: string;
   area: string;
@@ -37,7 +38,8 @@ type Rascunho = {
 
 function rascunhoDe(f: Filtros): Rascunho {
   return {
-    loc: f.local ? (f.bairro ? `${f.local}|${f.bairro}` : f.local) : "",
+    local: f.local,
+    bairro: f.bairro,
     especie: f.especie ?? "",
     servico: f.servico ?? "",
     area: f.area ?? "",
@@ -56,7 +58,8 @@ function lerRascunho(form: HTMLFormElement): Rascunho {
   };
   const varios = (k: string) => d.getAll(k).filter((v): v is string => typeof v === "string" && v !== "");
   return {
-    loc: um("loc"),
+    local: varios("local"),
+    bairro: varios("bairro"),
     especie: um("especie"),
     servico: um("servico"),
     area: um("area"),
@@ -70,12 +73,25 @@ function lerRascunho(form: HTMLFormElement): Rascunho {
 function paramsDe(r: Rascunho, q: string | undefined) {
   const p = new URLSearchParams();
   if (q) p.set("q", q);
-  const [local, bairro] = r.loc.split("|");
-  if (local) p.set("local", local);
-  if (local && bairro) p.set("bairro", bairro);
+  for (const k of ["local", "bairro"] as const) r[k].forEach((v) => p.append(k, v));
   for (const k of ["especie", "servico", "area", "preco"] as const) if (r[k]) p.set(k, r[k]);
   for (const k of ["modo", "disp", "pagamento"] as const) r[k].forEach((v) => p.append(k, v));
   return p;
+}
+
+// Bairro marcado leva a cidade junto; cidade desmarcada leva os bairros dela.
+function sincronizarLocais(form: HTMLFormElement, alvo: HTMLInputElement) {
+  const caixas = (name: string) =>
+    Array.from(form.elements).filter(
+      (el): el is HTMLInputElement => el instanceof HTMLInputElement && el.name === name,
+    );
+  if (alvo.name === "bairro" && alvo.checked) {
+    const cidade = caixas("local").find((c) => c.value === alvo.value.split(".")[0]);
+    if (cidade) cidade.checked = true;
+  }
+  if (alvo.name === "local" && !alvo.checked) {
+    for (const b of caixas("bairro")) if (b.value.startsWith(`${alvo.value}.`)) b.checked = false;
+  }
 }
 
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -129,7 +145,7 @@ export function BuscaLayout({
   }, [chave]);
 
   const ativos =
-    (filtros.local ? 1 : 0) +
+    (filtros.local.length ? 1 : 0) +
     [filtros.especie, filtros.servico, filtros.area, filtros.preco].filter(Boolean).length +
     filtros.modo.length +
     filtros.disp.length +
@@ -163,7 +179,9 @@ export function BuscaLayout({
 
   function aoMudarFiltro(e: React.FormEvent<HTMLFormElement>) {
     // Campos sem name (busca dentro da lista de lugares) não são filtro.
-    if (!(e.target as HTMLInputElement).name || !formRef.current) return;
+    const alvo = e.target as HTMLInputElement;
+    if (!alvo.name || !formRef.current) return;
+    sincronizarLocais(formRef.current, alvo);
     const r = lerRascunho(formRef.current);
     setRascunho(r);
     if (window.matchMedia(DESKTOP).matches) {
@@ -216,9 +234,12 @@ export function BuscaLayout({
   const nomeDe = (itens: { slug: string; nome: string }[], slug: string) => itens.find((i) => i.slug === slug)?.nome;
   const resumoVarios = (itens: { slug: string; nome: string }[], slugs: string[], vazio: string) =>
     slugs.length === 0 ? vazio : slugs.length === 1 ? nomeDe(itens, slugs[0]) : `${slugs.length} selecionadas`;
-  const [locRegiao, locBairro] = rascunho.loc.split("|");
-  const regiaoSel = catalogos.regioes.find((r) => r.slug === locRegiao);
-  const bairroSel = regiaoSel && catalogos.bairros.find((b) => b.region_id === regiaoSel.id && b.slug === locBairro);
+  const resumoLocal =
+    rascunho.local.length === 0
+      ? "Toda a região"
+      : rascunho.local.length === 1
+        ? (nomeDe(catalogos.regioes, rascunho.local[0]) ?? "")
+        : `${rascunho.local.length} selecionadas`;
   const rotuloBotao =
     total === null
       ? "Ver resultados"
@@ -312,13 +333,13 @@ export function BuscaLayout({
 
             <Disclosure
               title="Localização"
-              summary={regiaoSel ? (bairroSel ? `${bairroSel.nome}, ${regiaoSel.nome}` : regiaoSel.nome) : "Toda a região"}
+              summary={resumoLocal}
               defaultOpen
             >
               <ListaLocais
                 catalogos={catalogos}
-                selecionado={rascunho.loc}
-                inicial={rascunhoDe(filtros).loc}
+                selecionados={rascunho.local}
+                iniciais={filtros}
                 busca={buscaLocal}
                 onBusca={setBuscaLocal}
               />
@@ -462,19 +483,18 @@ const DESCRICAO_MODO: Record<string, string> = {
 // não batem com a busca) para a escolha feita continuar valendo no formulário.
 function ListaLocais({
   catalogos,
-  selecionado,
-  inicial,
+  selecionados,
+  iniciais,
   busca,
   onBusca,
 }: {
   catalogos: Catalogos;
-  selecionado: string;
-  inicial: string;
+  selecionados: string[];
+  iniciais: Filtros;
   busca: string;
   onBusca: (texto: string) => void;
 }) {
   const termo = semAcento(busca.trim());
-  const regiaoSelecionada = selecionado.split("|")[0];
   const bate = (nome: string) => !termo || semAcento(nome).includes(termo);
   const macros = [
     { chave: "alto_tiete", nome: "Alto Tietê" },
@@ -490,7 +510,7 @@ function ListaLocais({
           .map((b) => ({
             ...b,
             // Bairros aparecem quando a cidade está escolhida ou quando a busca acha o bairro.
-            visivel: termo ? bate(b.nome) : regiaoSelecionada === r.slug,
+            visivel: termo ? bate(b.nome) : selecionados.includes(r.slug),
           }));
         const visivel = bate(r.nome) || (Boolean(termo) && bairros.some((b) => b.visivel));
         return { ...r, bairros, visivel };
@@ -511,24 +531,20 @@ function ListaLocais({
         className="mb-3"
       />
       <div className="max-h-72 space-y-2 overflow-y-auto overscroll-contain rounded-control border border-border p-2">
-        <OptionRow type="radio" name="loc" value="" defaultChecked={inicial === ""} hidden={Boolean(termo)}>
-          Toda a região
-        </OptionRow>
         {grupos.map((g) => (
           <div key={g.chave} className="space-y-2" hidden={!g.visivel}>
             <p className="pt-2 text-caption font-semibold text-text-muted">{g.nome}</p>
             {g.regioes.map((r) => (
               <div key={r.slug} className="space-y-2" hidden={!r.visivel}>
-                <OptionRow type="radio" name="loc" value={r.slug} defaultChecked={inicial === r.slug}>
+                <OptionRow name="local" value={r.slug} defaultChecked={iniciais.local.includes(r.slug)}>
                   {r.nome}
                 </OptionRow>
                 {r.bairros.map((b) => (
                   <OptionRow
                     key={b.slug}
-                    type="radio"
-                    name="loc"
-                    value={`${r.slug}|${b.slug}`}
-                    defaultChecked={inicial === `${r.slug}|${b.slug}`}
+                    name="bairro"
+                    value={`${r.slug}.${b.slug}`}
+                    defaultChecked={iniciais.bairro.includes(`${r.slug}.${b.slug}`)}
                     hidden={!b.visivel}
                     hint={termo ? r.nome : undefined}
                     indent

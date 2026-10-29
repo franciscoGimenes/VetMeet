@@ -1,5 +1,6 @@
 import type { Catalogos } from "@/lib/catalogos";
 import { FILTROS_VAZIOS, urlBusca, type Filtros } from "@/lib/filtros";
+import { listaNatural } from "@/lib/formato";
 
 // "Castração (gato) em Suzano", "Veterinários para gatos em Mogi das Cruzes".
 export function tituloBusca(f: Filtros, cat: Catalogos) {
@@ -7,7 +8,8 @@ export function tituloBusca(f: Filtros, cat: Catalogos) {
     itens.find((i) => i.slug === slug)?.nome;
   const servico = nome(cat.servicos, f.servico);
   const especie = nome(cat.especies, f.especie);
-  const local = nome(cat.regioes, f.local);
+  const locais = f.local.map((l) => nome(cat.regioes, l)).filter((n): n is string => Boolean(n));
+  const local = locais.length > 3 ? `${locais.length} cidades` : locais.length ? listaNatural(locais) : undefined;
 
   if (f.q) return `“${f.q}”${local ? ` em ${local}` : ""}: veterinários e clínicas`;
 
@@ -17,13 +19,14 @@ export function tituloBusca(f: Filtros, cat: Catalogos) {
   return titulo;
 }
 
-// Só buscas por local e/ou espécie viram páginas indexáveis; o resto (e as
-// páginas 2+) fica fora do índice para não gerar milhares de URLs quase iguais.
+// Só buscas por uma cidade e/ou espécie viram páginas indexáveis; o resto (várias
+// cidades, bairros, outros filtros, páginas 2+) fica fora do índice para não
+// gerar milhares de URLs quase iguais.
 export function buscaIndexavel(f: Filtros, pagina: number) {
-  const outros = f.q || f.bairro || f.area || f.servico || f.preco || f.modo.length || f.pagamento.length || f.disp.length;
+  const outros = f.q || f.local.length > 1 || f.bairro.length || f.area || f.servico || f.preco || f.modo.length || f.pagamento.length || f.disp.length;
   return pagina === 1 && !outros;
 }
 
 export function canonicalBusca(f: Filtros) {
-  return urlBusca({ ...FILTROS_VAZIOS, local: f.local, especie: f.especie });
+  return urlBusca({ ...FILTROS_VAZIOS, local: f.local.slice(0, 1), especie: f.especie });
 }

@@ -137,6 +137,10 @@ Variações novas entram no componente, não na tela.
   Nada de checkbox solto, nada de select nativo para listas longas, nada de slider.
 - Localização: lista com busca (sem acento), bairros aparecem sob a cidade escolhida ou quando a
   busca os acha. As linhas filtradas ficam no DOM com `hidden` para a escolha não se perder.
+- Localização é múltipla: `local=a&local=b` e `bairro=cidade.bairro` (o slug do bairro só é único
+  na cidade). Cidade com bairros marcados fica restrita a eles; as outras valem inteiras. Marcar um
+  bairro marca a cidade; desmarcar a cidade desmarca os bairros. Links antigos (`bairro=centro` com
+  uma cidade) continuam valendo.
 - Os campos voltam ao estado da URL com `form.reset()` (não remontar: fecharia as seções
   abertas). Por isso o campo de nome fica fora do formulário de filtros.
 
@@ -167,9 +171,9 @@ Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normaliza
 - Tabelas de junção N:N: `veterinarian_species`, `veterinarian_specialties`, `veterinarian_services` (com preco_min/preco_max opcionais por serviço), `veterinarian_payment_methods`, `veterinarian_coverage_regions` (regiões cobertas em atendimento domiciliar)
 - `attendance_modes` (catálogo: clinica_propria, domiciliar, teleorientacao) + `veterinarian_attendance_modes`
 - `contact_events`: registro de cliques de contato (id, veterinarian_id com `on delete set null`, snapshots vet_slug/vet_is_demo preenchidos por trigger, canal: whatsapp | instagram | maps, origem: card | perfil, filtros_usados jsonb, created_at). Sem dados pessoais do tutor; sobrevive à remoção dos demos.
-- `vet_waitlist`: pré-cadastro de veterinários reais (nome, crmv_numero, crmv_uf, whatsapp, email, region_id, especies, modalidades, consentimento_lgpd, created_at)
+- `vet_waitlist`: pré-cadastro de veterinários reais (nome, crmv_numero, crmv_uf, whatsapp, email, regioes (slugs, uma ou várias), especies, modalidades, consentimento_lgpd, created_at)
 - `vet_waitlist_tentativas`: hash do IP por envio do pré-cadastro, para o limite de 5/hora (nunca o IP em claro)
-- `search_events`: buscas exibidas (filtros jsonb, local, total). Registradas pelo navegador via `/api/busca`, não na renderização do servidor (pré-carregamento de links inflaria os números)
+- `search_events`: buscas exibidas (filtros jsonb, local text[], total). Registradas pelo navegador via `/api/busca`, não na renderização do servidor (pré-carregamento de links inflaria os números)
 - `admins`: e-mails com acesso ao painel `/admin`
 
 Use RLS no Supabase:
@@ -180,7 +184,7 @@ Use RLS no Supabase:
 - Funções RPC: prefira `security invoker` (o RLS continua valendo).
 
 ## Regra temporária desta versão do MVP
-- O formulário "Sou veterinário" **publica o perfil na hora** (status `ativo`, `is_demo = false`, `crmv_verificado = false`), via `public.publicar_pre_cadastro`. O perfil nasce só com o que o formulário coleta (nome, CRMV, WhatsApp, cidade, espécies, modalidades); bio, áreas, serviços e preços ficam vazios.
+- O formulário "Sou veterinário" **publica o perfil na hora** (status `ativo`, `is_demo = false`, `crmv_verificado = false`), via `public.publicar_pre_cadastro`. O perfil nasce só com o que o formulário coleta (nome, CRMV, WhatsApp, cidades, espécies, modalidades; com várias cidades, ganha cobertura domiciliar e um "Consultório próprio" sem endereço em cada uma); bio, áreas, serviços e preços ficam vazios.
 - Controlado por `PUBLICAR_PRE_CADASTRO_DIRETO` em `src/lib/mvp.ts`. Com `false`, volta a ser só lista de espera, e o texto de consentimento e as telas acompanham.
 - **Não vale para as próximas versões:** antes de evoluir o MVP, desligue a flag e substitua por aprovação manual no painel (a mesma função serve para um botão "aprovar").
 - Para tirar um perfil do ar: `update veterinarians set status = 'inativo' where slug = '...'` no SQL Editor.

@@ -12,8 +12,12 @@ export const PRECOS_MAX = [150, 200, 250, 300] as const;
 export type Filtros = {
   // Nome do veterinário ou da clínica (texto livre, já normalizado por normalizarNome).
   q?: string;
-  local?: string;
-  bairro?: string;
+  // Cidades/subprefeituras (slugs). Vazio = toda a região.
+  local: string[];
+  // Bairros qualificados pela cidade ("mogi-das-cruzes.centro"): o slug do
+  // bairro só é único dentro da cidade. Uma cidade com bairros escolhidos fica
+  // restrita a eles; as outras valem inteiras.
+  bairro: string[];
   especie?: string;
   area?: string;
   servico?: string;
@@ -45,17 +49,21 @@ export function parseFiltros(params: ParamsBrutos, cat: Catalogos): Filtros {
   const regioes = slugs(cat.regioes);
   const valido = (set: Set<string>, v?: string) => (v && set.has(v) ? v : undefined);
 
-  // `loc` ("regiao" ou "regiao|bairro") é o que o formulário de filtros envia
-  // quando o JavaScript não roda; com JS, o cliente já manda local/bairro.
-  const [locRegiao, locBairro] = (unico(params.loc) ?? "").split("|");
-  const local = valido(regioes, unico(params.local) ?? locRegiao);
-  const regiao = cat.regioes.find((r) => r.slug === local);
-  const bairro = regiao
-    ? valido(
-        slugs(cat.bairros.filter((b) => b.region_id === regiao.id)),
-        unico(params.bairro) ?? locBairro,
-      )
-    : undefined;
+  const locais = [...new Set(lista(params.local).filter((l) => regioes.has(l)))];
+  // Bairros: "cidade.bairro". Links antigos mandam só o slug do bairro com uma
+  // cidade; nesse caso ele é qualificado com ela.
+  const bairrosValidos = new Set(
+    cat.bairros.map((b) => `${cat.regioes.find((r) => r.id === b.region_id)?.slug}.${b.slug}`),
+  );
+  const bairro = [
+    ...new Set(
+      lista(params.bairro)
+        .map((b) => (b.includes(".") || locais.length !== 1 ? b : `${locais[0]}.${b}`))
+        .filter((b) => bairrosValidos.has(b)),
+    ),
+  ];
+  // Bairro escolhido sem a cidade marcada (ex.: achado pela busca da lista): a cidade entra junto.
+  const local = [...new Set([...locais, ...bairro.map((b) => b.split(".")[0])])];
 
   const modos = slugs(cat.modos);
   const pagamentos = slugs(cat.pagamentos);
@@ -79,8 +87,8 @@ export function parseFiltros(params: ParamsBrutos, cat: Catalogos): Filtros {
 export function filtrosParaParams(f: Filtros, extra?: Record<string, string>) {
   const p = new URLSearchParams();
   if (f.q) p.set("q", f.q);
-  if (f.local) p.set("local", f.local);
-  if (f.local && f.bairro) p.set("bairro", f.bairro);
+  f.local.forEach((l) => p.append("local", l));
+  f.bairro.forEach((b) => p.append("bairro", b));
   if (f.especie) p.set("especie", f.especie);
   if (f.servico) p.set("servico", f.servico);
   if (f.area) p.set("area", f.area);
@@ -97,7 +105,7 @@ export function urlBusca(f: Filtros, extra?: Record<string, string>) {
   return qs ? `/buscar?${qs}` : "/buscar";
 }
 
-export const FILTROS_VAZIOS: Filtros = { modo: [], pagamento: [], disp: [] };
+export const FILTROS_VAZIOS: Filtros = { local: [], bairro: [], modo: [], pagamento: [], disp: [] };
 
 export function temFiltros(f: Filtros) {
   return filtrosParaParams(f).toString() !== "";
@@ -110,10 +118,16 @@ export function filtrosAtivos(f: Filtros, cat: Catalogos) {
   const ativos: { chave: string; rotulo: string; sem: Filtros }[] = [];
 
   if (f.q) ativos.push({ chave: "q", rotulo: `Nome: “${f.q}”`, sem: { ...f, q: undefined } });
-  if (f.local) {
-    ativos.push({ chave: "local", rotulo: nome(cat.regioes, f.local), sem: { ...f, local: undefined, bairro: undefined } });
+  for (const l of f.local) {
+    const sem = { ...f, local: f.local.filter((x) => x !== l), bairro: f.bairro.filter((b) => !b.startsWith(`${l}.`)) };
+    ativos.push({ chave: `local:${l}`, rotulo: nome(cat.regioes, l), sem });
   }
-  if (f.bairro) ativos.push({ chave: "bairro", rotulo: nome(cat.bairros, f.bairro), sem: { ...f, bairro: undefined } });
+  for (const b of f.bairro) {
+    const [regiao, slug] = b.split(".");
+    const r = cat.regioes.find((x) => x.slug === regiao);
+    const rotulo = cat.bairros.find((x) => x.region_id === r?.id && x.slug === slug)?.nome ?? slug;
+    ativos.push({ chave: `bairro:${b}`, rotulo, sem: { ...f, bairro: f.bairro.filter((x) => x !== b) } });
+  }
   if (f.especie) ativos.push({ chave: "especie", rotulo: nome(cat.especies, f.especie), sem: { ...f, especie: undefined } });
   if (f.servico) ativos.push({ chave: "servico", rotulo: nome(cat.servicos, f.servico), sem: { ...f, servico: undefined } });
   if (f.area) ativos.push({ chave: "area", rotulo: nome(cat.areas, f.area), sem: { ...f, area: undefined } });

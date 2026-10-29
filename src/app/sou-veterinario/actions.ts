@@ -98,7 +98,7 @@ export async function enviarPreCadastro(
       crmv_uf: v.crmv_uf,
       whatsapp: v.whatsapp,
       email: v.email,
-      region_id: catalogos.regioes.find((r) => r.slug === v.cidade)!.id,
+      regioes: v.regioes,
       especies: v.especies,
       modalidades: v.modalidades,
       consentimento_lgpd: true,

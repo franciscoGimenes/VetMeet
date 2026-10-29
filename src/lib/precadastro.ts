@@ -12,7 +12,7 @@ export type CampoPreCadastro =
   | "crmv_uf"
   | "whatsapp"
   | "email"
-  | "cidade"
+  | "regioes"
   | "especies"
   | "modalidades"
   | "consentimento";
@@ -25,7 +25,7 @@ export type DadosPreCadastro = {
   crmv_uf: string;
   whatsapp: string;
   email: string;
-  cidade: string;
+  regioes: string[];
   especies: string[];
   modalidades: string[];
   consentimento: boolean;
@@ -95,7 +95,8 @@ export function validarPreCadastro(
   const email = dados.email.trim().toLowerCase();
   if (!EMAIL.test(email) || email.length > 254) erros.email = "Informe um e-mail válido.";
 
-  if (!permitidos.cidades.includes(dados.cidade)) erros.cidade = "Escolha a cidade ou região onde atende.";
+  const regioes = [...new Set(dados.regioes)].filter((r) => permitidos.cidades.includes(r));
+  if (!regioes.length) erros.regioes = "Marque ao menos uma cidade ou região onde atende.";
 
   const especies = [...new Set(dados.especies)].filter((e) => permitidos.especies.includes(e));
   if (!especies.length) erros.especies = "Marque ao menos uma espécie.";
@@ -114,7 +115,7 @@ export function validarPreCadastro(
       crmv_uf: uf,
       whatsapp: whatsapp!,
       email,
-      cidade: dados.cidade,
+      regioes,
       especies,
       modalidades,
       consentimento: true,
@@ -134,7 +135,7 @@ export function lerFormulario(form: FormData): DadosPreCadastro {
     crmv_uf: texto("crmv_uf"),
     whatsapp: texto("whatsapp"),
     email: texto("email"),
-    cidade: texto("cidade"),
+    regioes: lista("regioes"),
     especies: lista("especies"),
     modalidades: lista("modalidades"),
     consentimento: form.get("consentimento") === "sim",

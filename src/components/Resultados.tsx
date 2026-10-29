@@ -5,13 +5,21 @@ import { ButtonLink, Card, Icon, chipClasses } from "@/components/ui";
 import type { Catalogos } from "@/lib/catalogos";
 import { FILTROS_VAZIOS, filtrosAtivos, urlBusca, type Filtros } from "@/lib/filtros";
 import { buscarVeterinarios, contarVeterinarios, POR_PAGINA } from "@/lib/veterinarios";
+import { listaNatural } from "@/lib/formato";
 import { VIZINHOS } from "@/lib/vizinhos";
 
+// "Suzano", "Centro e Jundiapeba, Mogi das Cruzes", "Poá, Suzano e Arujá", "5 cidades".
 export function nomeLocal(f: Filtros, cat: Catalogos) {
-  const regiao = cat.regioes.find((r) => r.slug === f.local);
-  if (!regiao) return undefined;
-  const bairro = cat.bairros.find((b) => b.region_id === regiao.id && b.slug === f.bairro);
-  return bairro && bairro.nome !== regiao.nome ? `${bairro.nome}, ${regiao.nome}` : regiao.nome;
+  const regioes = f.local.map((l) => cat.regioes.find((r) => r.slug === l)).filter((r) => r !== undefined);
+  if (!regioes.length) return undefined;
+  if (regioes.length > 3) return `${regioes.length} cidades`;
+  if (regioes.length > 1) return listaNatural(regioes.map((r) => r.nome));
+  const [regiao] = regioes;
+  const bairros = f.bairro
+    .filter((b) => b.startsWith(`${regiao.slug}.`))
+    .map((b) => cat.bairros.find((x) => x.region_id === regiao.id && x.slug === b.split(".")[1])?.nome)
+    .filter((n): n is string => Boolean(n) && n !== regiao.nome);
+  return bairros.length ? `${listaNatural(bairros)}, ${regiao.nome}` : regiao.nome;
 }
 
 const plural = (n: number) => (n === 1 ? "1 profissional" : `${n} profissionais`);
@@ -127,18 +135,21 @@ function Paginacao({ filtros, pagina, totalPaginas }: { filtros: Filtros; pagina
 async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos: Catalogos }) {
   if (filtros.q) return <NomeNaoEncontrado filtros={filtros} catalogos={catalogos} q={filtros.q} />;
 
-  const afrouxar = filtrosAtivos(filtros, catalogos).filter((a) => a.chave !== "local");
-  const vizinhos = filtros.local ? (VIZINHOS[filtros.local] ?? []) : [];
+  const afrouxar = filtrosAtivos(filtros, catalogos).filter((a) => !a.chave.startsWith("local:"));
+  // Regiões vizinhas das escolhidas, que ainda não estão na busca.
+  const vizinhos = [...new Set(filtros.local.flatMap((l) => VIZINHOS[l] ?? []))].filter(
+    (v) => !filtros.local.includes(v),
+  );
 
   const [semFiltro, porVizinho, todaRegiao] = await Promise.all([
     Promise.all(afrouxar.map(async (a) => ({ ...a, total: await contarVeterinarios(a.sem) }))),
     Promise.all(
       vizinhos.map(async (slug) => {
-        const f = { ...filtros, local: slug, bairro: undefined };
+        const f = { ...filtros, local: [...filtros.local, slug] };
         return { slug, filtros: f, total: await contarVeterinarios(f) };
       }),
     ),
-    filtros.local ? contarVeterinarios({ ...filtros, local: undefined, bairro: undefined }) : 0,
+    filtros.local.length ? contarVeterinarios({ ...filtros, local: [], bairro: [] }) : 0,
   ]);
 
   const sugestoesFiltro = semFiltro.filter((s) => s.total > 0).sort((a, b) => b.total - a.total).slice(0, 4);
@@ -170,7 +181,7 @@ async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos
 
       {sugestoesVizinhos.length > 0 && (
         <div className="mt-6">
-          <h4 className="text-small font-semibold text-text">Buscar em regiões próximas</h4>
+          <h4 className="text-small font-semibold text-text">Incluir regiões próximas</h4>
           <ul className="mt-2 flex flex-wrap gap-2">
             {sugestoesVizinhos.map((v) => (
               <li key={v.slug}>
@@ -184,8 +195,8 @@ async function EstadoVazio({ filtros, catalogos }: { filtros: Filtros; catalogos
       )}
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {filtros.local && todaRegiao > 0 && (
-          <ButtonLink href={urlBusca({ ...filtros, local: undefined, bairro: undefined })} variant="secondary">
+        {filtros.local.length > 0 && todaRegiao > 0 && (
+          <ButtonLink href={urlBusca({ ...filtros, local: [], bairro: [] })} variant="secondary">
             Buscar em toda a região ({todaRegiao})
           </ButtonLink>
         )}

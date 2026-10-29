@@ -31,21 +31,21 @@ export type Database = {
           created_at: string
           filtros: Json
           id: number
-          local: string | null
+          local: string[] | null
           total: number
         }
         Insert: {
           created_at?: string
           filtros?: Json
           id?: never
-          local?: string | null
+          local?: string[] | null
           total: number
         }
         Update: {
           created_at?: string
           filtros?: Json
           id?: never
-          local?: string | null
+          local?: string[] | null
           total?: number
         }
         Relationships: []
@@ -318,7 +318,7 @@ export type Database = {
           id: number
           modalidades: string[]
           nome: string
-          region_id: number
+          regioes: string[]
           veterinarian_id: string | null
           whatsapp: string
         }
@@ -332,7 +332,7 @@ export type Database = {
           id?: never
           modalidades?: string[]
           nome: string
-          region_id: number
+          regioes?: string[]
           veterinarian_id?: string | null
           whatsapp: string
         }
@@ -346,18 +346,11 @@ export type Database = {
           id?: never
           modalidades?: string[]
           nome?: string
-          region_id?: number
+          regioes?: string[]
           veterinarian_id?: string | null
           whatsapp?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "vet_waitlist_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "vet_waitlist_veterinarian_id_fkey"
             columns: ["veterinarian_id"]
@@ -657,7 +650,7 @@ export type Database = {
       buscar_veterinarios: {
         Args: {
           p_area?: string
-          p_bairro?: string
+          p_bairros?: string[]
           p_emergencia?: boolean
           p_especie?: string
           p_fim_de_semana?: boolean
@@ -668,7 +661,7 @@ export type Database = {
           p_pagamentos?: string[]
           p_preco_max?: number
           p_q?: string
-          p_regiao?: string
+          p_regioes?: string[]
           p_servico?: string
         }
         Returns: Json

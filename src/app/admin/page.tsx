@@ -53,7 +53,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
     supabase.rpc("painel_admin", { p_dias: dias }),
     supabase
       .from("vet_waitlist")
-      .select("id, nome, crmv_numero, crmv_uf, whatsapp, email, especies, modalidades, created_at, regions(nome), veterinarians(slug)")
+      .select("id, nome, crmv_numero, crmv_uf, whatsapp, email, especies, modalidades, regioes, created_at, veterinarians(slug)")
       .order("created_at", { ascending: false })
       .limit(200),
     getCatalogos(),
@@ -217,7 +217,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                   <th className="py-2 font-medium">Data</th>
                   <th className="py-2 font-medium">Nome</th>
                   <th className="py-2 font-medium">CRMV</th>
-                  <th className="py-2 font-medium">Cidade</th>
+                  <th className="py-2 font-medium">Cidades</th>
                   <th className="py-2 font-medium">WhatsApp</th>
                   <th className="py-2 font-medium">E-mail</th>
                   <th className="py-2 font-medium">Espécies</th>
@@ -244,7 +244,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                     <td className="py-2 whitespace-nowrap">
                       {c.crmv_uf} {c.crmv_numero}
                     </td>
-                    <td className="py-2">{c.regions?.nome}</td>
+                    <td className="py-2">{nomes(c.regioes, catalogos.regioes)}</td>
                     <td className="py-2 whitespace-nowrap">
                       <a href={`https://wa.me/${c.whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary hover:underline">
                         {formatarTelefone(c.whatsapp)}
