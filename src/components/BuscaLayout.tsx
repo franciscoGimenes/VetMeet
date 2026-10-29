@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -95,7 +95,6 @@ export function BuscaLayout({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const naBusca = usePathname() === "/buscar";
   // Ids únicos por instância: com Cache Components, a página anterior fica no DOM
   // escondida (<Activity>), e ids fixos apontariam para os elementos dela.
   const id = useId();
@@ -205,16 +204,14 @@ export function BuscaLayout({
   }
 
   // Debounce do nome: só busca depois de uma pausa na digitação, e só com 2+
-  // letras (ou vazio, para limpar). Enter busca na hora. Fora de /buscar (página
-  // inicial) só o Enter busca: navegar no meio da digitação trocaria de página e
-  // a pessoa perderia o foco e o que digitou depois da pausa.
+  // letras (ou vazio, para limpar). Enter busca na hora.
   const buscarNome = useEffectEvent(() => aplicar(true));
   useEffect(() => {
     const q = normalizarNome(termo);
-    if (!naBusca || q === qEnviado || (q && q.length < NOME_MIN)) return;
+    if (q === qEnviado || (q && q.length < NOME_MIN)) return;
     const espera = setTimeout(buscarNome, ESPERA_DIGITACAO_MS);
     return () => clearTimeout(espera);
-  }, [termo, qEnviado, naBusca]);
+  }, [termo, qEnviado]);
 
   const nomeDe = (itens: { slug: string; nome: string }[], slug: string) => itens.find((i) => i.slug === slug)?.nome;
   const resumoVarios = (itens: { slug: string; nome: string }[], slugs: string[], vazio: string) =>

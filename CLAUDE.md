@@ -140,7 +140,11 @@ nos componentes. A lucide 1.x não tem ícones de marca: WhatsApp usa `MessageCi
 Instagram usa `AtSign`, sempre com o nome escrito ao lado.
 
 ### Arquivos de imagem
-Fotos em `public/images/`, ilustrações em `public/illustrations/`.
+Fotos em `public/images/` (as da página inicial em `public/images/home/`, reduzidas para no máximo 2400px), ilustrações em `public/illustrations/`. Use `next/image` com import estático (dá dimensões e blur) e `preload` só na imagem do topo.
+
+## Páginas
+- `/`: página inicial (landing) com busca rápida, atalhos por espécie, serviço e cidade, faixa para veterinários e FAQ. A busca em si fica em `/buscar`.
+- O rodapé está no layout raiz. O e-mail de contato vem de `NEXT_PUBLIC_CONTATO_EMAIL`; sem ele, a linha de contato some.
 
 ## Modelo de dados (base)
 Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normalização):
@@ -193,7 +197,7 @@ Use RLS no Supabase:
 ## Busca por nome
 - `?q=` procura no nome do veterinário e no nome das clínicas dele, sem acento e sem maiúsculas, por trecho; cada palavra precisa aparecer em um dos dois.
 - No banco: `public.normalizar_texto()` (unaccent com dicionário fixo, imutável) + índices trigrama (`pg_trgm`) nas duas colunas. Extensões ficam no schema `extensions`.
-- No campo: debounce de 400ms, mínimo de 2 letras, Enter busca na hora, digitação usa `router.replace` (não enche o histórico). Na página inicial só o Enter busca (navegar no meio da digitação trocaria de página).
+- No campo: debounce de 400ms, mínimo de 2 letras, Enter busca na hora, digitação usa `router.replace` (não enche o histórico).
 - Não tolera erro de digitação ("Kéber" não acha "Kléber"); `pg_trgm` permite adicionar isso depois com `similarity`.
 
 ## Filtros da busca

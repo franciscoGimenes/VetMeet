@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
+import { Rodape } from "@/components/Rodape";
 import { ButtonLink } from "@/components/ui";
 import { SITE_DESCRICAO, SITE_NOME, SITE_URL } from "@/lib/site";
 import { CORES } from "@/lib/tokens";
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         <main className="flex-1">{children}</main>
+        <Rodape />
       </body>
     </html>
   );
