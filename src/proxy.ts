@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Renova a sessão do Supabase nas rotas do admin (o refresh token precisa ser
+// Renova a sessão do Supabase nas rotas logadas (o refresh token precisa ser
 // regravado no cookie a cada renovação) e manda quem não está logado para o login.
 export async function proxy(request: NextRequest) {
   let resposta = NextResponse.next({ request });
@@ -33,9 +33,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
+  if (pathname.startsWith("/conta") && !user) {
+    const login = request.nextUrl.clone();
+    login.pathname = "/entrar";
+    login.search = "";
+    return NextResponse.redirect(login);
+  }
+
   return resposta;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/auth/:path*"],
+  matcher: ["/admin/:path*", "/auth/:path*", "/conta/:path*", "/entrar/:path*", "/sou-veterinario"],
 };

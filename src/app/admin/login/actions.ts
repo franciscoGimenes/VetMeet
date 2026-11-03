@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { urlCallback } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export type EstadoLogin = { enviado?: boolean; erro?: string; email?: string };
@@ -11,13 +11,6 @@ function emailsAdmin() {
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-}
-
-async function origem() {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const protocolo = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
-  return `${protocolo}://${host}`;
 }
 
 export async function enviarLink(_anterior: EstadoLogin, form: FormData): Promise<EstadoLogin> {
@@ -32,7 +25,7 @@ export async function enviarLink(_anterior: EstadoLogin, form: FormData): Promis
     const supabase = await createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${await origem()}/auth/callback` },
+      options: { emailRedirectTo: await urlCallback("/admin") },
     });
     if (error) {
       console.error("login admin:", error.message);

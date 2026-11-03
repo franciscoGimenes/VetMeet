@@ -8,7 +8,6 @@ import { ButtonLink, Card, chipClasses, Disclosure, Icon } from "@/components/ui
 import { getCatalogos, type Regiao } from "@/lib/catalogos";
 import { cn } from "@/lib/cn";
 import { FILTROS_VAZIOS, urlBusca, type Filtros } from "@/lib/filtros";
-import { PUBLICAR_PRE_CADASTRO_DIRETO } from "@/lib/mvp";
 import fotoHero from "../../public/images/home/exame-yorkshire.jpg";
 import fotoVeterinario from "../../public/images/home/ultrassom-spitz.jpg";
 import ilustracaoGato from "../../public/illustrations/undraw_cat_lqdj.svg";
@@ -106,14 +105,13 @@ const PERGUNTAS = [
   },
   {
     pergunta: "Sou veterinário. Como me cadastro?",
-    resposta: PUBLICAR_PRE_CADASTRO_DIRETO
-      ? "Toque em “Sou veterinário” e preencha nome, CRMV, WhatsApp, cidades onde atende, espécies e forma de atendimento. Seu perfil entra na busca na hora."
-      : "Toque em “Sou veterinário” e preencha nome, CRMV, WhatsApp, cidades onde atende, espécies e forma de atendimento. Você entra na lista de espera e avisamos quando seu perfil puder ir ao ar.",
+    resposta:
+      "Toque em “Sou veterinário”, crie sua conta com e-mail ou LinkedIn e preencha seu perfil: CRMV, WhatsApp, onde e como atende, espécies, serviços e preços. Ao publicar, ele entra na busca na hora, e você pode editar, pausar ou excluir quando quiser.",
   },
   {
     pergunta: "Os profissionais são verificados?",
     resposta:
-      "Ainda não. A verificação do CRMV está em implementação. Por enquanto, o número mostrado no perfil é informado pelo próprio profissional, e você pode conferi-lo no site do CRMV-SP. Quando a verificação estiver pronta, os perfis conferidos vão exibir o selo “CRMV verificado”.",
+      "Ainda não. Nesta fase de testes, o CRMV mostrado no perfil é informado pelo próprio profissional, que declara ter inscrição ativa, e o perfil exibe o selo “CRMV não verificado”. Você pode conferir o número no site do CRMV do estado. Se algo parecer errado, use “Denunciar perfil”, no fim da página do profissional.",
   },
 ];
 
@@ -235,9 +233,7 @@ export default async function Inicio() {
                 { icone: MessageCircle, texto: "Receba o contato direto no seu WhatsApp, sem intermediário" },
                 {
                   icone: BadgeCheck,
-                  texto: PUBLICAR_PRE_CADASTRO_DIRETO
-                    ? "Cadastro em poucos minutos, com o perfil no ar na hora"
-                    : "Cadastro em poucos minutos: avisamos quando seu perfil for ao ar",
+                  texto: "Cadastro em poucos minutos, com o perfil no ar na hora",
                 },
               ].map((b) => (
                 <li key={b.texto} className="flex items-start gap-3 text-body text-sage-200">
@@ -249,7 +245,7 @@ export default async function Inicio() {
               ))}
             </ul>
             <ButtonLink href="/sou-veterinario" variant="accent" size="lg" className="mt-8 w-full sm:w-auto">
-              {PUBLICAR_PRE_CADASTRO_DIRETO ? "Criar meu perfil" : "Entrar na lista de espera"}
+              Criar meu perfil
             </ButtonLink>
           </div>
           <Image

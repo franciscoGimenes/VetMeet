@@ -134,3 +134,19 @@ export function EsqueletoAdmin() {
     </Carregando>
   );
 }
+
+export function EsqueletoConta() {
+  return (
+    <Carregando rotulo="Carregando seu perfil">
+      <div className={linha("w-48", "h-9")} />
+      <div className={linha("w-72 max-w-full", "h-4", cn(pulso, "mt-3"))} />
+      {[0, 1].map((i) => (
+        <div key={i} className={cn(cardClasses({ padding: "lg" }), "mt-6 space-y-4 md:mt-8")}>
+          <div className={linha("w-32", "h-6")} />
+          <div className={cn(pulso, "h-11 rounded-control")} />
+          <div className={cn(pulso, "h-11 rounded-control")} />
+        </div>
+      ))}
+    </Carregando>
+  );
+}
