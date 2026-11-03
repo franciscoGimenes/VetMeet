@@ -1,5 +1,6 @@
 import { Mail } from "lucide-react";
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/ui";
 import { CONTATO_EMAIL } from "@/lib/site";
 
@@ -10,7 +11,7 @@ export function Rodape() {
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-3">
         <div>
-          <p className="text-h3 text-primary">VetMeet</p>
+          <Logo />
           <p className="mt-2 text-small text-text-muted">
             Veterinários do Alto Tietê e da Zona Leste de São Paulo.
           </p>

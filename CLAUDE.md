@@ -150,6 +150,19 @@ traço 2. Use 16px dentro de texto small/caption e 24px em destaques. Sem SVG de
 nos componentes. A lucide 1.x não tem ícones de marca: WhatsApp usa `MessageCircle` e
 Instagram usa `AtSign`, sempre com o nome escrito ao lado.
 
+### Marca
+- Símbolo: pata cuja almofada é um pin de localização (pin em `primary`, dedos em `accent`, furo
+  vazado). Nome "VetMeet" em Plus Jakarta Sans 800, já convertido em paths ("Vet" em `text`,
+  "Meet" em `primary`).
+- Arquivos em `public/brand/`: `logo-horizontal.svg`, `logo-simbolo.svg`, `logo-monocromatico.svg`
+  (só `text`), `logo-negativo.svg` (sobre `primary`), `favicon.svg/.ico`, `apple-touch-icon.png`,
+  `icon-192/512.png` e `og-image.png`. Conceitos descartados em `public/brand/conceitos/`.
+- No site: componente `Logo` (cabeçalho com `compacto`: só o símbolo abaixo de 420px; rodapé
+  completo). Favicon, ícone da Apple e imagem de compartilhamento usam as convenções de arquivo
+  do Next em `src/app` (`favicon.ico`, `icon.svg`, `apple-icon.png`, `opengraph-image.png`), que
+  são cópias dos arquivos de `public/brand`. O manifest está em `src/app/manifest.ts`.
+- Não redesenhe nem recolora o logo à mão; mudanças entram no kit inteiro.
+
 ### Arquivos de imagem
 Fotos em `public/images/` (as da página inicial em `public/images/home/`, reduzidas para no máximo 2400px), ilustrações em `public/illustrations/`. Use `next/image` com import estático (dá dimensões e blur) e `preload` só na imagem do topo.
 

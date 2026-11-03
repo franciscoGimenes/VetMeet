@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { Rodape } from "@/components/Rodape";
 import { ButtonLink } from "@/components/ui";
 import { SITE_DESCRICAO, SITE_NOME, SITE_URL } from "@/lib/site";
@@ -51,8 +52,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-full flex-col">
         <header className="border-b border-border bg-surface">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
-            <Link href="/" className="inline-flex min-h-11 items-center text-h3 text-primary">
-              VetMeet
+            <Link href="/" className="inline-flex min-h-11 shrink-0 items-center">
+              <Logo compacto />
             </Link>
             <nav className="flex items-center gap-2">
               <ButtonLink href="/buscar" variant="ghost">
