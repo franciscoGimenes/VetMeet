@@ -1,4 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { formatarCrmv, type Crmv } from "@/lib/crmv";
 import { createPublicClient } from "@/lib/supabase/public";
 import type { Filtros } from "@/lib/filtros";
 
@@ -7,8 +8,8 @@ export const POR_PAGINA = 12;
 // Tag de todos os dados de veterinários em cache; invalidada quando um perfil é publicado.
 export const TAG_VETERINARIOS = "veterinarios";
 
-const SELECT_VET = `
-  id, slug, nome_exibicao, crmv_numero, crmv_uf, crmv_verificado, bio, foto_url,
+export const SELECT_VET = `
+  id, slug, status, nome_exibicao, crmv_numero, crmv_uf, crmv_secundaria, crmv_verificado, bio, foto_url,
   whatsapp, instagram, anos_experiencia, consulta_preco_min, consulta_preco_max,
   atende_emergencia, atende_fim_de_semana, atende_noturno, is_demo,
   veterinarian_species(species(slug, nome, ordem)),
@@ -28,7 +29,10 @@ export type Veterinario = {
   id: string;
   slug: string;
   nome: string;
+  status: "rascunho" | "ativo" | "pausado" | "inativo";
+  // Texto oficial ("CRMV-SP nº 12345-S") e as partes, para formulários.
   crmv: string;
+  crmvDados: Crmv;
   crmvVerificado: boolean;
   bio: string | null;
   fotoUrl: string | null;
@@ -70,12 +74,15 @@ const semOrdem = <T extends { ordem: number }>(item: T): Omit<T, "ordem"> => {
   return resto;
 };
 
-function mapear(v: Linha): Veterinario {
+export function mapear(v: Linha): Veterinario {
+  const crmvDados = { numero: v.crmv_numero, uf: v.crmv_uf, secundaria: v.crmv_secundaria };
   return {
     id: v.id,
     slug: v.slug,
+    status: v.status,
     nome: v.nome_exibicao,
-    crmv: `CRMV-${v.crmv_uf} ${v.crmv_numero}`,
+    crmv: formatarCrmv(crmvDados),
+    crmvDados,
     crmvVerificado: v.crmv_verificado,
     bio: v.bio,
     fotoUrl: v.foto_url,
