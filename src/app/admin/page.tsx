@@ -4,9 +4,13 @@ import { Suspense, type ReactNode } from "react";
 import { EsqueletoAdmin } from "@/components/Esqueletos";
 import { Badge, Button, Card, buttonClasses } from "@/components/ui";
 import { getCatalogos, type Catalogos } from "@/lib/catalogos";
+import { formatarCrmv } from "@/lib/crmv";
+import { MOTIVOS_DENUNCIA } from "@/lib/denuncia";
 import { DISPONIBILIDADES } from "@/lib/filtros";
 import { createClient } from "@/lib/supabase/server";
-import { sair } from "./actions";
+import { formatarTelefone } from "@/lib/whatsapp";
+import { atualizarDenuncia, sair } from "./actions";
+import { BotaoConvite } from "./BotaoConvite";
 import { GraficoCliques } from "./GraficoCliques";
 
 type Painel = {
@@ -49,13 +53,15 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
   const { dias: diasParam } = await searchParams;
   const dias = PERIODOS.find((p) => String(p) === diasParam) ?? 30;
 
-  const [painel, preCadastros, catalogos] = await Promise.all([
+  const [painel, preCadastros, denuncias, catalogos] = await Promise.all([
     supabase.rpc("painel_admin", { p_dias: dias }),
+    supabase.rpc("admin_lista_espera"),
     supabase
-      .from("vet_waitlist")
-      .select("id, nome, crmv_numero, crmv_uf, whatsapp, email, especies, modalidades, regioes, created_at, veterinarians(slug)")
+      .from("reports")
+      .select("id, vet_slug, motivo, descricao, status, created_at, veterinarians(nome_exibicao, slug)")
+      .order("status")
       .order("created_at", { ascending: false })
-      .limit(200),
+      .limit(100),
     getCatalogos(),
   ]);
 
@@ -78,6 +84,8 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
   const nomesVets = await nomesDosVeterinarios(supabase, p.veterinarios.map((v) => v.slug));
   const nomeRegiao = (slug: string) => catalogos.regioes.find((r) => r.slug === slug)?.nome ?? slug;
   const lista = preCadastros.data ?? [];
+  const listaDenuncias = denuncias.data ?? [];
+  const abertas = listaDenuncias.filter((d) => d.status === "aberta").length;
 
   return (
     <>
@@ -161,7 +169,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
       <Bloco titulo="Veterinários mais contatados" className="mt-6 md:mt-8">
         {p.veterinarios.length ? (
           <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-            <table className="w-full min-w-[32rem] text-left text-small tabular-nums [&_td]:pr-4 [&_th]:pr-4">
+            <table className="w-full min-w-128 text-left text-small tabular-nums [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-caption text-text-muted">
                 <tr>
                   <th className="py-2 font-medium">Profissional</th>
@@ -198,8 +206,55 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
         )}
       </Bloco>
 
+      <Bloco titulo={`Denúncias (${abertas} abertas)`} className="mt-6 md:mt-8">
+        {listaDenuncias.length ? (
+          <ul className="divide-y divide-border">
+            {listaDenuncias.map((d) => (
+              <li key={d.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 text-small">
+                  <p className="flex flex-wrap items-center gap-2">
+                    {d.veterinarians ? (
+                      <Link href={`/vet/${d.veterinarians.slug}`} className="inline-flex min-h-11 items-center font-medium text-text hover:underline">
+                        {d.veterinarians.nome_exibicao}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-text">{d.vet_slug} (fora do ar)</span>
+                    )}
+                    <Badge variant={d.status === "aberta" ? "warning" : "neutral"}>{ROTULO_STATUS[d.status]}</Badge>
+                  </p>
+                  <p className="text-text">{MOTIVOS_DENUNCIA.find((m) => m.slug === d.motivo)?.nome ?? d.motivo}</p>
+                  {d.descricao && <p className="mt-1 whitespace-pre-line text-text-muted">{d.descricao}</p>}
+                  <p className="mt-1 text-caption text-text-muted tabular-nums">
+                    {new Date(d.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}
+                  </p>
+                </div>
+                <form action={atualizarDenuncia} className="flex shrink-0 gap-2">
+                  <input type="hidden" name="id" value={d.id} />
+                  {d.status === "aberta" ? (
+                    <>
+                      <Button type="submit" name="status" value="analisada" variant="secondary">
+                        Analisada
+                      </Button>
+                      <Button type="submit" name="status" value="descartada" variant="ghost">
+                        Descartar
+                      </Button>
+                    </>
+                  ) : (
+                    <Button type="submit" name="status" value="aberta" variant="ghost">
+                      Reabrir
+                    </Button>
+                  )}
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Vazio>Nenhuma denúncia.</Vazio>
+        )}
+      </Bloco>
+
       <Bloco
-        titulo={`Pré-cadastro (${p.totais.pre_cadastros_total})`}
+        titulo={`Lista de espera (${lista.length})`}
         className="mt-6 md:mt-8"
         acao={
           lista.length > 0 && (
@@ -211,7 +266,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
       >
         {lista.length ? (
           <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-            <table className="w-full min-w-[56rem] text-left text-small [&_td]:pr-4 [&_th]:pr-4">
+            <table className="w-full min-w-256 text-left text-small [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-caption text-text-muted">
                 <tr>
                   <th className="py-2 font-medium">Data</th>
@@ -222,6 +277,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                   <th className="py-2 font-medium">E-mail</th>
                   <th className="py-2 font-medium">Espécies</th>
                   <th className="py-2 font-medium">Modalidades</th>
+                  <th className="py-2 font-medium">Conta</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border align-top">
@@ -232,9 +288,9 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                     </td>
                     <td className="py-2 font-medium text-text">
                       {c.nome}
-                      {c.veterinarians?.slug && (
+                      {c.perfil_slug && (
                         <Link
-                          href={`/vet/${c.veterinarians.slug}`}
+                          href={`/vet/${c.perfil_slug}`}
                           className="ml-2 inline-flex min-h-11 items-center text-small font-normal text-primary hover:underline"
                         >
                           ver perfil
@@ -242,7 +298,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                       )}
                     </td>
                     <td className="py-2 whitespace-nowrap">
-                      {c.crmv_uf} {c.crmv_numero}
+                      {formatarCrmv({ numero: c.crmv_numero, uf: c.crmv_uf, secundaria: false })}
                     </td>
                     <td className="py-2">{nomes(c.regioes, catalogos.regioes)}</td>
                     <td className="py-2 whitespace-nowrap">
@@ -257,13 +313,16 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                     </td>
                     <td className="py-2">{nomes(c.especies, catalogos.especies)}</td>
                     <td className="py-2">{nomes(c.modalidades, catalogos.modos)}</td>
+                    <td className="py-2">
+                      {c.tem_conta ? <Badge variant="success">Tem conta</Badge> : <BotaoConvite id={c.id} convidadoEm={c.convidado_em} />}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <Vazio>Nenhum pré-cadastro ainda.</Vazio>
+          <Vazio>Ninguém na lista de espera.</Vazio>
         )}
       </Bloco>
     </>
@@ -303,12 +362,7 @@ function rotuloFiltro(chave: string, valor: string, cat: Catalogos) {
 const nomes = (slugs: string[], itens: { slug: string; nome: string }[]) =>
   slugs.map((s) => itens.find((i) => i.slug === s)?.nome ?? s).join(", ");
 
-function formatarTelefone(numero: string) {
-  const d = numero.replace(/^55/, "");
-  return d.length === 11
-    ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
-    : `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-}
+const ROTULO_STATUS = { aberta: "Aberta", analisada: "Analisada", descartada: "Descartada" } as const;
 
 function Numero({ rotulo, valor, detalhe }: { rotulo: string; valor: number; detalhe: string }) {
   return (
