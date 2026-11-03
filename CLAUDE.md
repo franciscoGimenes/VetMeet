@@ -5,25 +5,64 @@ VetMeet é uma plataforma que conecta tutores de animais a médicos-veterinário
 
 Referência de produto: PsyMeet (terapia online), adaptado à veterinária, onde atendimento presencial, domiciliar e portfólio pesam muito mais.
 
-## Fase atual: MVP de validação
-Objetivo: colocar na mão de usuários reais para validar a ideia. Escopo enxuto, mas banco de dados estruturado e pronto para uso profissional.
+## Fase atual: Contas de veterinário + Rede
+O MVP de busca está concluído e no ar: landing, busca com filtros e por nome, perfil público,
+contato por WhatsApp com registro do clique e dados de demonstração. Esta fase adiciona contas
+de veterinário (cadastro, login e edição do próprio perfil) e a Rede.
 
-Região inicial: **Alto Tietê + Zona Leste de São Paulo**.
+Região: **Alto Tietê + Zona Leste de São Paulo** (sem mudança).
 
-### Dentro do escopo do MVP
-- Tela inicial (landing)
-- Busca pública de veterinários com filtros
-- Busca por nome
-- Página de perfil do veterinário
-- Contato via WhatsApp (link wa.me) com registro do clique
-- Formulário de pré-cadastro para veterinários reais (lista de espera)
-- Dados de demonstração realistas, marcados como demo
+### Dentro do escopo
+- Tudo do MVP de busca (continua valendo)
+- Conta de veterinário: e-mail e senha ou LinkedIn; o próprio veterinário cria, edita, pausa e exclui o perfil
+- Denúncia de perfil (sem login)
+- Rede (ver "Regras da Rede")
 
 ### Fora do escopo (NÃO implementar agora)
 - Agendamento e pagamento dentro da plataforma
-- Avaliações/reviews de usuários
-- Login de tutor
-- Aba "Rede" (LinkedIn nichado de veterinários): fase futura. Modele o banco de forma que não atrapalhe essa expansão, mas não construa nada dela.
+- Avaliações de tutores
+- Login de tutor (só veterinários têm conta)
+- Vídeos
+- Sistema de seguir
+- Algoritmo de feed
+
+### Verificação de CRMV: desligada temporariamente
+Durante a fase de testes e homologação não há verificação: todo perfil entra ativo, com o selo
+"CRMV não verificado". A coluna `crmv_verificado` continua no banco (sempre `false` para quem se
+cadastra; o próprio veterinário não consegue alterá-la) e volta a ser usada quando a verificação
+for religada.
+
+### Formato do CRMV
+Exibição oficial: "CRMV-SP nº 12345"; inscrição secundária: "CRMV-SP nº 12345-S".
+Sempre via `formatarCrmv()` (`src/lib/crmv.ts`), nunca montado na tela.
+No banco: `crmv_numero` (só dígitos, até 6), `crmv_uf`, `crmv_secundaria`.
+
+## Regras da Rede
+- **Quem participa:** só veterinários logados publicam, curtem e comentam. Visitantes leem tudo
+  (feed `/rede` público, sem login); ao tentar interagir, veem o aviso de que a interação é
+  exclusiva para veterinários.
+- **Post:** texto até 3.000 caracteres e até 6 fotos; sem vídeo. Categoria obrigatória de lista
+  fixa (Dica para tutores, Relato de caso, Atendimento, Bastidores, Curso e capacitação, Outros);
+  marcações opcionais de espécie e serviço com os catálogos da busca. O autor edita e exclui os
+  próprios posts.
+- **Fotos:** comprimidas, redimensionadas e convertidas para WebP no envio, sempre sem EXIF
+  (inclusive GPS, que pode expor a clínica ou a casa do tutor).
+- **Feed:** cronológico, sem algoritmo e sem seguir. Filtros por categoria, espécie, serviço e
+  região do veterinário, refletidos na URL. Cada post tem página própria (`/rede/post/[id]`) com
+  SEO e metadados de compartilhamento.
+- **Comentários:** o autor do post apaga comentários no próprio post; cada um apaga os seus.
+- **Perfil:** aba "Publicações"; até 3 posts fixados como portfólio no topo.
+- **LinkedIn (opcional):** publicar também no LinkedIn exige conectar a conta com o escopo
+  `w_member_social`, autorizado de forma explícita (mesmo para quem entrou com LinkedIn). O post é
+  salvo no VetMeet primeiro; falha no envio não perde o post. Excluir no VetMeet exclui no
+  LinkedIn. Tokens só no servidor, criptografados. Nunca fazer scraping do LinkedIn.
+- **Ética (CFMV):** caráter educativo, sem garantia de cura ou de resultado, sem sensacionalismo
+  e sem expor tutores. "Relato de caso" e "Atendimento" com fotos exigem declarar a autorização do
+  tutor. Conteúdo sensível (cirurgias, ferimentos) aparece desfocado até o clique.
+- **Moderação:** denúncia de perfis, posts e comentários na tabela `reports`; no `/admin`, fila com
+  ocultar, restaurar e descartar. Conteúdo ocultado some do público e continua visível ao autor,
+  com aviso. Limite de posts e comentários por hora por veterinário.
+- **Demo:** posts demo têm `is_demo` e saem junto no script de remoção dos demos.
 
 ## Stack
 - Next.js (App Router) + TypeScript
