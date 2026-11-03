@@ -6,6 +6,7 @@ import {
   MapPin,
   MessageCircle,
   PawPrint,
+  ShieldAlert,
   Stethoscope,
   UserRound,
   Video,
@@ -17,6 +18,7 @@ import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { BotaoContato } from "@/components/BotaoContato";
+import { DenunciarPerfil } from "@/components/DenunciarPerfil";
 import { EsqueletoPerfil } from "@/components/Esqueletos";
 import { nomeLocal } from "@/components/Resultados";
 import { SeloDemo } from "@/components/SeloDemo";
@@ -125,7 +127,11 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
                     <Icon icon={BadgeCheck} size="sm" /> CRMV verificado
                   </span>
                 ) : (
-                  !vet.isDemo && <span>(informado pelo profissional)</span>
+                  !vet.isDemo && (
+                    <Badge variant="warning">
+                      <Icon icon={ShieldAlert} size="sm" /> CRMV não verificado
+                    </Badge>
+                  )
                 )}
                 {vet.anosExperiencia != null && (
                   <>
@@ -192,6 +198,8 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
                 </ul>
               </Secao>
             )}
+
+            {!vet.isDemo && <DenunciarPerfil vetId={vet.id} />}
           </div>
   
           <Contato vet={vet} whatsapp={whatsapp} evento={evento} />
