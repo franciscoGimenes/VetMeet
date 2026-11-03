@@ -37,5 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     })),
     { url: url("/sou-veterinario"), changeFrequency: "monthly", priority: 0.5 },
+    { url: url("/termos"), changeFrequency: "yearly", priority: 0.2 },
+    { url: url("/privacidade"), changeFrequency: "yearly", priority: 0.2 },
   ];
 }

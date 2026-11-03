@@ -29,6 +29,11 @@ export function Rodape() {
                 Sou veterinário
               </Link>
             </li>
+            <li>
+              <Link href="/entrar" className={LINK}>
+                Área do veterinário
+              </Link>
+            </li>
             {CONTATO_EMAIL && (
               <li>
                 <a href={`mailto:${CONTATO_EMAIL}`} className={`${LINK} gap-2`}>
@@ -45,8 +50,20 @@ export function Rodape() {
           <p className="mt-2 text-small text-pretty text-sage-200">
             Quem procura veterinário não precisa se cadastrar, e não guardamos dados pessoais de tutores.
             Buscas e cliques de contato são registrados de forma anônima, só para medir o uso do site.
-            {CONTATO_EMAIL && " Veterinários podem pedir a correção ou remoção dos seus dados pelo e-mail de contato."}
+            {" "}Veterinários editam e excluem os próprios dados na área logada.
           </p>
+          <ul className="mt-2 flex flex-wrap gap-x-6">
+            <li>
+              <Link href="/termos" className={LINK}>
+                Termos de Uso
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacidade" className={LINK}>
+                Política de Privacidade
+              </Link>
+            </li>
+          </ul>
         </div>
       </div>
     </footer>
