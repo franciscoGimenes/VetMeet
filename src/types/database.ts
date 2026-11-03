@@ -26,6 +26,47 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: number
+          ip_hash: string
+          motivo: Database["public"]["Enums"]["report_motivo"]
+          status: Database["public"]["Enums"]["report_status"]
+          vet_slug: string
+          veterinarian_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: never
+          ip_hash: string
+          motivo: Database["public"]["Enums"]["report_motivo"]
+          status?: Database["public"]["Enums"]["report_status"]
+          vet_slug?: string
+          veterinarian_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: never
+          ip_hash?: string
+          motivo?: Database["public"]["Enums"]["report_motivo"]
+          status?: Database["public"]["Enums"]["report_status"]
+          vet_slug?: string
+          veterinarian_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_veterinarian_id_fkey"
+            columns: ["veterinarian_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_events: {
         Row: {
           created_at: string
@@ -307,9 +348,37 @@ export type Database = {
         }
         Relationships: []
       }
+      vet_consents: {
+        Row: {
+          created_at: string
+          declaracao_crmv: boolean
+          id: number
+          privacidade_versao: string
+          termos_versao: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          declaracao_crmv: boolean
+          id?: never
+          privacidade_versao: string
+          termos_versao: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          declaracao_crmv?: boolean
+          id?: never
+          privacidade_versao?: string
+          termos_versao?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vet_waitlist: {
         Row: {
           consentimento_lgpd: boolean
+          convidado_em: string | null
           created_at: string
           crmv_numero: string
           crmv_uf: string
@@ -324,6 +393,7 @@ export type Database = {
         }
         Insert: {
           consentimento_lgpd: boolean
+          convidado_em?: string | null
           created_at?: string
           crmv_numero: string
           crmv_uf: string
@@ -338,6 +408,7 @@ export type Database = {
         }
         Update: {
           consentimento_lgpd?: boolean
+          convidado_em?: string | null
           created_at?: string
           crmv_numero?: string
           crmv_uf?: string
@@ -581,6 +652,7 @@ export type Database = {
           consulta_preco_min: number | null
           created_at: string
           crmv_numero: string
+          crmv_secundaria: boolean
           crmv_uf: string
           crmv_verificado: boolean
           foto_url: string | null
@@ -604,6 +676,7 @@ export type Database = {
           consulta_preco_min?: number | null
           created_at?: string
           crmv_numero: string
+          crmv_secundaria?: boolean
           crmv_uf: string
           crmv_verificado?: boolean
           foto_url?: string | null
@@ -627,6 +700,7 @@ export type Database = {
           consulta_preco_min?: number | null
           created_at?: string
           crmv_numero?: string
+          crmv_secundaria?: boolean
           crmv_uf?: string
           crmv_verificado?: boolean
           foto_url?: string | null
@@ -647,6 +721,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_lista_espera: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          convidado_em: string | null
+          created_at: string
+          crmv_numero: string
+          crmv_uf: string
+          email: string
+          especies: string[]
+          id: number
+          modalidades: string[]
+          nome: string
+          perfil_slug: string | null
+          regioes: string[]
+          tem_conta: boolean
+          whatsapp: string
+        }[]
+      }
       buscar_veterinarios: {
         Args: {
           p_area?: string
@@ -666,6 +758,12 @@ export type Database = {
         }
         Returns: Json
       }
+      e_dono_do_veterinario: {
+        Args: {
+          p_vet: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -676,10 +774,9 @@ export type Database = {
         }
         Returns: Json
       }
-      publicar_pre_cadastro: {
+      salvar_meu_perfil: {
         Args: {
-          p_slug: string
-          p_waitlist_id: number
+          p: Json
         }
         Returns: string
       }
@@ -697,7 +794,15 @@ export type Database = {
       contact_origem: "card" | "perfil"
       regiao_macro: "alto_tiete" | "zona_leste_sp"
       region_tipo: "municipio" | "subprefeitura"
-      vet_status: "rascunho" | "ativo" | "inativo"
+      report_motivo:
+        | "informacao_falsa"
+        | "crmv_irregular"
+        | "conduta_inadequada"
+        | "golpe_ou_cobranca_indevida"
+        | "conteudo_improprio"
+        | "outro"
+      report_status: "aberta" | "analisada" | "descartada"
+      vet_status: "rascunho" | "ativo" | "inativo" | "pausado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -829,7 +934,16 @@ export const Constants = {
       contact_origem: ["card", "perfil"],
       regiao_macro: ["alto_tiete", "zona_leste_sp"],
       region_tipo: ["municipio", "subprefeitura"],
-      vet_status: ["rascunho", "ativo", "inativo"],
+      report_motivo: [
+        "informacao_falsa",
+        "crmv_irregular",
+        "conduta_inadequada",
+        "golpe_ou_cobranca_indevida",
+        "conteudo_improprio",
+        "outro",
+      ],
+      report_status: ["aberta", "analisada", "descartada"],
+      vet_status: ["rascunho", "ativo", "inativo", "pausado"],
     },
   },
 } as const
