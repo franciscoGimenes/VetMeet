@@ -61,21 +61,28 @@ Depois, no **SQL Editor** do projeto, cadastre o admin:
 insert into public.admins (email) values ('seu-email@exemplo.com');
 ```
 
-## 3. Configurar o login do painel (Supabase → Authentication)
+## 3. Configurar a autenticação (Supabase → Authentication)
 
 1. **URL Configuration**
    - *Site URL:* `https://seu-dominio` (ou `https://<projeto>.vercel.app`)
    - *Redirect URLs* (adicione todas):
      - `https://seu-dominio/auth/callback`
-     - `https://<projeto>.vercel.app/auth/callback`
+     - `https://*.vercel.app/auth/callback` (produção e prévias da Vercel)
      - `http://localhost:3000/auth/callback` (desenvolvimento)
 
-   Sem isso o link do e-mail volta para a Site URL e o login não completa.
-2. **Sign In / Providers → Email:** deixe ativo. Depois do primeiro login,
-   desative **Allow new users to sign up**: o admin já existe e ninguém mais
-   precisa criar conta.
-3. O e-mail padrão do Supabase tem limite baixo de envios por hora. Para um
-   único admin basta; com mais gente, configure SMTP próprio (Auth → SMTP).
+   Sem isso os links dos e-mails (confirmação, nova senha, acesso ao painel) e o
+   LinkedIn voltam para a Site URL e o login não completa.
+2. **Sign In / Providers → Email:** ativo, com **Allow new users to sign up**
+   ligado (veterinários criam conta) e **Confirm email** ligado.
+3. **Sign In / Providers → LinkedIn (OIDC):** ativo, com Client ID e Client Secret
+   do app no LinkedIn Developers. No app do LinkedIn, em *Auth → Authorized
+   redirect URLs*, cadastre `https://<project-ref>.supabase.co/auth/v1/callback`.
+4. **SMTP (Authentication → Emails → SMTP Settings):** obrigatório. O e-mail
+   padrão do Supabase só envia para a equipe do projeto e poucas mensagens por
+   hora. Use o Resend (host `smtp.resend.com`, porta 465, usuário `resend`,
+   senha = API key) com remetente do domínio verificado.
+5. **Passwords:** ligue *Leaked password protection* (aviso do Security Advisor).
+6. Na Vercel, defina `RESEND_API_KEY` e `EMAIL_REMETENTE` para os convites do painel.
 
 ## 4. Conferir depois do deploy
 

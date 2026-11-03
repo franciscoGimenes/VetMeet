@@ -198,7 +198,7 @@ Escala (cada token já define família, peso, tamanho e entrelinha):
 - Nunca remover outline sem pôr o anel no lugar.
 
 ### Componentes base (`src/components/ui`)
-Button (primary, accent, secondary, ghost, whatsapp; tamanhos md 44px e lg 52px), Chip (selecionável),
+Button (primary, accent, secondary, ghost, whatsapp, danger; tamanhos md 44px e lg 52px), Chip (selecionável),
 OptionRow (linha inteira clicável com checkbox/radio desenhado), Disclosure (seção recolhível),
 Input, Select, Card, Badge, Sheet (bottom sheet no celular; `telaCheia` e `estaticoNoDesktop`).
 Variações novas entram no componente, não na tela.
@@ -247,12 +247,15 @@ Fotos em `public/images/` (as da página inicial em `public/images/home/`, reduz
 
 ## Páginas
 - `/`: página inicial (landing) com busca rápida, atalhos por espécie, serviço e cidade, faixa para veterinários e FAQ. A busca em si fica em `/buscar`.
+- `/sou-veterinario`: criar conta (e-mail e senha ou LinkedIn). `/entrar` e `/entrar/recuperar`: login e recuperação de senha.
+- `/conta` (logado): "Meu perfil" com foto, status, pausar e excluir conta · `/conta/aceite` · `/conta/perfil` (criar e editar) · `/conta/nova-senha`.
+- `/termos` e `/privacidade`: texto-base, versões em `src/lib/termos.ts`.
 - O rodapé está no layout raiz. O e-mail de contato vem de `NEXT_PUBLIC_CONTATO_EMAIL`; sem ele, a linha de contato some.
 
 ## Modelo de dados (base)
 Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normalização):
 
-- `veterinarians`: id, slug, nome_exibicao, crmv_numero, crmv_uf, crmv_verificado (bool), bio, foto_url, whatsapp, instagram, anos_experiencia, consulta_preco_min, consulta_preco_max, atende_emergencia, atende_fim_de_semana, atende_noturno, is_demo (bool, default false), status (rascunho/ativo/inativo), created_at, updated_at
+- `veterinarians`: id, user_id (→ auth.users, `on delete cascade`; nulo nos demos), slug, nome_exibicao, crmv_numero, crmv_uf, crmv_secundaria (bool), crmv_verificado (bool), bio, foto_url, whatsapp, instagram, anos_experiencia, consulta_preco_min, consulta_preco_max, atende_emergencia, atende_fim_de_semana, atende_noturno, is_demo (bool, default false), status (rascunho/ativo/pausado/inativo: pausado = o próprio vet tirou da busca; inativo = tirado do ar pelo admin), created_at, updated_at
 - `regions`: municípios e subprefeituras (id, nome, tipo: municipio | subprefeitura, regiao_macro: alto_tiete | zona_leste_sp)
 - `neighborhoods`: bairros (id, region_id, nome)
 - `clinics`: locais de atendimento próprios (id, veterinarian_id, nome, endereco, neighborhood_id, lat, lng)
@@ -263,7 +266,9 @@ Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normaliza
 - Tabelas de junção N:N: `veterinarian_species`, `veterinarian_specialties`, `veterinarian_services` (com preco_min/preco_max opcionais por serviço), `veterinarian_payment_methods`, `veterinarian_coverage_regions` (regiões cobertas em atendimento domiciliar)
 - `attendance_modes` (catálogo: clinica_propria, domiciliar, teleorientacao) + `veterinarian_attendance_modes`
 - `contact_events`: registro de cliques de contato (id, veterinarian_id com `on delete set null`, snapshots vet_slug/vet_is_demo preenchidos por trigger, canal: whatsapp | instagram | maps, origem: card | perfil, filtros_usados jsonb, created_at). Sem dados pessoais do tutor; sobrevive à remoção dos demos.
-- `vet_waitlist`: pré-cadastro de veterinários reais (nome, crmv_numero, crmv_uf, whatsapp, email, regioes (slugs, uma ou várias), especies, modalidades, consentimento_lgpd, created_at)
+- `vet_consents`: aceites (user_id, termos_versao, privacidade_versao, declaracao_crmv, created_at)
+- `reports`: denúncias de perfil (veterinarian_id `on delete set null`, vet_slug por trigger, motivo, descricao, status aberta/analisada/descartada, ip_hash)
+- `vet_waitlist`: lista de espera antiga, não é mais cadastro; mantida com os registros e `convidado_em` (nome, crmv_numero, crmv_uf, whatsapp, email, regioes (slugs, uma ou várias), especies, modalidades, consentimento_lgpd, created_at)
 - `vet_waitlist_tentativas`: hash do IP por envio do pré-cadastro, para o limite de 5/hora (nunca o IP em claro)
 - `search_events`: buscas exibidas (filtros jsonb, local text[], total). Registradas pelo navegador via `/api/busca`, não na renderização do servidor (pré-carregamento de links inflaria os números)
 - `admins`: e-mails com acesso ao painel `/admin`
@@ -271,20 +276,27 @@ Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normaliza
 Use RLS no Supabase:
 - Leitura pública: catálogos e veterinários `status = 'ativo'` (e seus vínculos).
 - Inserção pública (anon): apenas `contact_events`.
+- Veterinário logado: lê, cria e altera só o próprio perfil (`user_id = auth.uid()`) e os próprios vínculos e locais (`public.e_dono_do_veterinario`). O trigger `veterinarians_guard` impede mudar dono, demo, slug e `crmv_verificado` e limita o status a ativo ↔ pausado. O perfil inteiro é salvo numa transação por `public.salvar_meu_perfil(jsonb)` (security invoker).
+- Fotos: bucket público `fotos-veterinarios`, pasta `{user_id}/`; só o dono grava na própria pasta. O navegador recorta, reduz e reencoda a imagem (sai sem EXIF) antes do envio.
+- Excluir conta apaga, em cascata, perfil, vínculos e aceites; `contact_events` e `reports` ficam com `vet_slug = 'perfil-excluido'`.
+- `reports` é gravada só pelo servidor (honeypot + 5/hora por IP); admin lê e muda o status.
 - `vet_waitlist`, `vet_waitlist_tentativas` e `search_events` são gravados só pelo servidor com a service role (`src/lib/supabase/admin.ts`), depois de validação, honeypot e limite por IP. Não volte a abrir insert público nelas: isso permitiria contornar essas proteções pela API do Supabase com a chave pública.
-- Leitura de `vet_waitlist`, `contact_events` e `search_events`: só usuários logados presentes em `admins` (`public.is_admin()`).
+- Leitura de `vet_waitlist`, `contact_events`, `search_events` e `reports`: só usuários logados presentes em `admins` com e-mail confirmado (`public.is_admin()`, security definer porque lê `auth.users`; `admin_lista_espera()` idem).
 - Funções RPC: prefira `security invoker` (o RLS continua valendo).
 
-## Regra temporária desta versão do MVP
-- O formulário "Sou veterinário" **publica o perfil na hora** (status `ativo`, `is_demo = false`, `crmv_verificado = false`), via `public.publicar_pre_cadastro`. O perfil nasce só com o que o formulário coleta (nome, CRMV, WhatsApp, cidades, espécies, modalidades; com várias cidades, ganha cobertura domiciliar e um "Consultório próprio" sem endereço em cada uma); bio, áreas, serviços e preços ficam vazios.
-- Controlado por `PUBLICAR_PRE_CADASTRO_DIRETO` em `src/lib/mvp.ts`. Com `false`, volta a ser só lista de espera, e o texto de consentimento e as telas acompanham.
-- **Não vale para as próximas versões:** antes de evoluir o MVP, desligue a flag e substitua por aprovação manual no painel (a mesma função serve para um botão "aprovar").
-- Para tirar um perfil do ar: `update veterinarians set status = 'inativo' where slug = '...'` no SQL Editor.
+## Perfis no ar
+- Sem aprovação manual nesta fase: o perfil entra ativo ao publicar, com o selo "CRMV não verificado".
+- Para tirar um perfil do ar: `update veterinarians set status = 'inativo' where slug = '...'` no SQL Editor (o veterinário não consegue reverter).
+- Perfis publicados pelo pré-cadastro antigo não têm conta; quando a pessoa cria conta com o mesmo e-mail (confirmado), o perfil passa a ser dela (`reivindicarPerfilDoPreCadastro` em `src/lib/conta.ts`).
 
 ## Painel e autenticação
 - `/admin` usa login por link mágico do Supabase. Duas travas: `ADMIN_EMAILS` (env) decide quem recebe o link; a tabela `admins` decide quem lê os dados.
-- `src/proxy.ts` (o antigo middleware, renomeado no Next 16) renova a sessão nas rotas `/admin` e `/auth`.
-- Não há login de tutor nem de veterinário no MVP.
+- Veterinário: e-mail e senha (com confirmação de e-mail e recuperação) ou LinkedIn (`linkedin_oidc`, escopos openid profile email). Não existe conta de tutor.
+- Todos os links de e-mail e o LinkedIn voltam para `/auth/callback?next=...` (`urlCallback` em `src/lib/auth.ts`); o Supabase só aceita destinos listados em Authentication > URL Configuration > Redirect URLs.
+- Aceite: no cadastro por e-mail é gravado pelo servidor; quem entra pelo LinkedIn (ou aceitou versão antiga) passa por `/conta/aceite`.
+- Convite da lista de espera: e-mail próprio pela API do Resend (`RESEND_API_KEY`, `EMAIL_REMETENTE`), com link para `/sou-veterinario`.
+- `src/proxy.ts` (o antigo middleware, renomeado no Next 16) renova a sessão em `/admin`, `/auth`, `/conta`, `/entrar` e `/sou-veterinario` e manda quem não está logado de `/conta` para `/entrar`.
+- Páginas logadas chamam `exigirSessao()` (faz `await connection()`: o client do Supabase lê o relógio). Server Actions que levam a outra etapa redirecionam direto para ela (`etapaDaConta`), não para `/conta`: o navegador reaproveitaria a renderização anterior.
 
 ## Banco e migrations
 - Projeto Supabase em nuvem: `vetmeet` (ref `xieishahvlzatkbuppch`). Não há Docker local.
