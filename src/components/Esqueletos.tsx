@@ -4,7 +4,9 @@ import { cn } from "@/lib/cn";
 // Esqueletos com a mesma forma das telas reais (cards com borda, avatar, linhas
 // de texto e botões), para a página não "pular" quando os dados chegam.
 const pulso = "animate-pulse bg-border/70";
-const linha = (largura: string, altura = "h-4") => cn(pulso, altura, largura, "rounded-pill");
+// Sobre as faixas sage-100 (cabeçalho da busca, topo do perfil).
+const pulsoSage = "animate-pulse bg-sage-200";
+const linha = (largura: string, altura = "h-4", base = pulso) => cn(base, altura, largura, "rounded-pill");
 
 function Carregando({ rotulo, className, children }: { rotulo: string; className?: string; children: React.ReactNode }) {
   return (
@@ -50,9 +52,15 @@ export function EsqueletoCard() {
 
 export function EsqueletoBusca() {
   return (
-    <Carregando rotulo="Carregando resultados" className="mx-auto w-full max-w-6xl px-4 pt-4 pb-16 sm:px-6 lg:pt-8">
-      <div className={cn(pulso, "h-11 rounded-control lg:h-20 lg:rounded-card")} />
-      <div className="mt-6 lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8">
+    <Carregando rotulo="Carregando resultados" className="pb-16">
+      {/* Mesma faixa sage-100 do cabeçalho real: título + campo de nome */}
+      <div className="border-b border-sage-200 bg-sage-100">
+        <div className="mx-auto max-w-6xl space-y-4 px-4 pt-6 pb-3 sm:px-6 lg:pt-10 lg:pb-8">
+          <div className={cn(pulsoSage, "h-8 w-3/4 rounded-pill lg:w-96")} />
+          <div className={cn(pulsoSage, "h-16 rounded-control lg:max-w-xl")} />
+        </div>
+      </div>
+      <div className="mx-auto mt-4 w-full max-w-6xl px-4 sm:px-6 lg:mt-8 lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8">
         <div className={cn(pulso, "hidden h-96 rounded-card lg:block")} />
         <div>
           <div className={linha("mb-4 w-48", "h-6")} />
@@ -69,17 +77,22 @@ export function EsqueletoBusca() {
 
 export function EsqueletoPerfil() {
   return (
-    <Carregando rotulo="Carregando perfil" className="mx-auto w-full max-w-6xl px-4 pt-4 pb-6 sm:px-6 lg:pt-6">
-      <div className={cn(pulso, "h-11 w-48 rounded-control")} />
-      <div className={cn(cardClasses({ padding: "lg" }), "mt-4 flex gap-4 sm:items-center sm:gap-6")}>
-        <div className={cn(pulso, "size-20 shrink-0 rounded-pill sm:size-24")} />
-        <div className="flex-1 space-y-3">
-          <div className={linha("w-2/3", "h-8")} />
-          <div className={linha("w-1/3", "h-5")} />
-          <div className={linha("w-1/2")} />
+    <Carregando rotulo="Carregando perfil" className="pb-6">
+      {/* Mesma faixa sage-100 do topo do perfil */}
+      <div className="bg-sage-100">
+        <div className="mx-auto max-w-6xl px-4 pt-4 pb-6 sm:px-6 md:pb-8 lg:pt-6">
+          <div className={cn(pulsoSage, "h-11 w-48 rounded-control")} />
+          <div className="mt-4 flex gap-4 sm:items-center sm:gap-6">
+            <div className={cn(pulsoSage, "size-20 shrink-0 rounded-pill sm:size-24")} />
+            <div className="flex-1 space-y-3">
+              <div className={linha("w-2/3", "h-8", pulsoSage)} />
+              <div className={linha("w-1/3", "h-5", pulsoSage)} />
+              <div className={linha("w-1/2", "h-4", pulsoSage)} />
+            </div>
+          </div>
         </div>
       </div>
-      <div className="mt-6 grid gap-6 md:mt-8 md:gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+      <div className="mx-auto mt-6 grid max-w-6xl gap-6 px-4 sm:px-6 md:mt-8 md:gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
         <div className="space-y-6 md:space-y-8">
           {["w-full", "w-5/6", "w-2/3"].map((w) => (
             <div key={w} className={cardClasses({ padding: "lg" })}>

@@ -41,13 +41,12 @@ async function Busca({ searchParams }: { searchParams: Promise<Params> }) {
   const consulta = filtrosParaParams(filtros).toString();
 
   return (
-    <div className="pt-4 lg:pt-8">
-      <h1 className="sr-only">{tituloBusca(filtros, catalogos)}</h1>
+    <>
       {/* Só a página 1 conta: paginar não é uma busca nova. */}
       {pagina === 1 && <RegistroBusca consulta={consulta} />}
-      <BuscaLayout chave={consulta} catalogos={catalogos} filtros={filtros}>
+      <BuscaLayout chave={consulta} catalogos={catalogos} filtros={filtros} titulo={tituloBusca(filtros, catalogos)}>
         <ListaResultados catalogos={catalogos} filtros={filtros} pagina={pagina} />
       </BuscaLayout>
-    </div>
+    </>
   );
 }

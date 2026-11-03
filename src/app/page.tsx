@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { BuscaRapida } from "@/components/BuscaRapida";
-import { ButtonLink, Card, cardClasses, chipClasses, Disclosure, Icon } from "@/components/ui";
+import { Forma } from "@/components/decor/Forma";
+import { ButtonLink, Card, chipClasses, Disclosure, Icon } from "@/components/ui";
 import { getCatalogos, type Regiao } from "@/lib/catalogos";
 import { cn } from "@/lib/cn";
 import { FILTROS_VAZIOS, urlBusca, type Filtros } from "@/lib/filtros";
@@ -133,65 +134,76 @@ export default async function Inicio() {
 
   return (
     <>
-      {/* 1. Hero */}
-      <section className="mx-auto grid max-w-6xl gap-6 px-4 pt-8 pb-6 sm:px-6 md:pt-12 md:pb-8 lg:grid-cols-2 lg:items-center lg:gap-12">
-        <div>
-          <h1 className="text-display text-balance text-text">Encontre o veterinário certo, perto de você</h1>
-          <p className="mt-4 text-body-lg text-pretty text-text-muted">
-            Clínicas, atendimento em casa e teleorientação no Alto Tietê e na Zona Leste de São Paulo.
-          </p>
-          <Card padding="md" className="mt-6">
-            <BuscaRapida regioes={catalogos.regioes} especies={catalogos.especies} />
-          </Card>
+      {/* 1. Hero: o ponto memorável da página (forma orgânica atrás da foto, patinhas) */}
+      <section className="relative overflow-hidden bg-sage-100 bg-patinhas">
+        {/* Só no desktop: no celular aparecia cortada ao lado da foto e pesava o topo */}
+        <Forma variante="c" className="-bottom-40 -left-40 hidden h-110 w-120 text-accent-soft md:block" />
+        <div className="relative mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:py-16 lg:grid-cols-2 lg:items-center lg:gap-12">
+          <div>
+            <h1 className="text-display text-balance text-text">Encontre o veterinário certo, perto de você</h1>
+            <p className="mt-4 text-body-lg text-pretty text-text-muted">
+              Clínicas, atendimento em casa e teleorientação no Alto Tietê e na Zona Leste de São Paulo.
+            </p>
+            <Card padding="md" className="mt-6">
+              <BuscaRapida regioes={catalogos.regioes} especies={catalogos.especies} />
+            </Card>
+          </div>
+          <div className="relative">
+            {/* sage-200: primary-soft some sobre sage-100 (os dois tons quase se confundem) */}
+            <Forma variante="a" className="-inset-6 text-sage-200 md:-inset-10" />
+            <Image
+              src={fotoHero}
+              alt="Yorkshire de pelo dourado, de língua de fora, sobre a mesa de atendimento enquanto mãos de luva ouvem o coração dele com um estetoscópio."
+              preload
+              placeholder="blur"
+              sizes="(min-width: 1152px) 528px, (min-width: 1024px) 45vw, (min-width: 640px) 592px, 100vw"
+              className="relative aspect-4/3 w-full rounded-card object-cover"
+            />
+          </div>
         </div>
-        <Image
-          src={fotoHero}
-          alt="Yorkshire de pelo dourado, de língua de fora, sobre a mesa de atendimento enquanto mãos de luva ouvem o coração dele com um estetoscópio."
-          preload
-          placeholder="blur"
-          sizes="(min-width: 1152px) 528px, (min-width: 1024px) 45vw, (min-width: 640px) 592px, 100vw"
-          className="aspect-4/3 w-full rounded-card object-cover"
-        />
       </section>
 
-      {/* 2. Espécies */}
-      <Secao titulo="Para qual animal?">
+      {/* 2. Espécies: cada bloco com o seu tom */}
+      <Secao titulo="Para qual animal?" fundo="bg-surface">
         {/* "Grandes animais" ocupa duas colunas: os três links cabem numa linha. */}
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {ESPECIES.map((a) => (
+          {ESPECIES.map((a, i) => (
             <li key={a.titulo} className={cn(a.opcoes && "col-span-2")}>
-              <CardAtalho atalho={a} />
+              <CardAtalho atalho={a} tom={TONS_ESPECIE[i % TONS_ESPECIE.length]} />
             </li>
           ))}
         </ul>
       </Secao>
 
-      {/* 3. Como funciona */}
+      {/* 3. Como funciona: é uma sequência de verdade, por isso numerada; sem caixas */}
       <Secao titulo="Como funciona">
-        <ol className="grid gap-4 md:grid-cols-3">
+        <ol className="grid gap-6 md:grid-cols-3">
           {PASSOS.map((p, i) => (
-            <Card as="li" key={p.titulo} className="flex flex-col">
-              <div className="flex h-28 items-end justify-center md:h-36">
+            // Celular: ilustração ao lado do texto (empilhadas, as três dobravam a seção)
+            <li key={p.titulo} className="grid grid-cols-[6rem_1fr] items-center gap-4 md:flex md:flex-col md:items-stretch md:gap-0">
+              <div className="flex h-24 items-end justify-center md:h-36">
                 <Image src={p.imagem} alt={p.alt} className="max-h-full w-auto" />
               </div>
-              <p className="mt-5 flex items-center gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-primary-soft text-small font-semibold text-primary">
-                  {i + 1}
-                </span>
-                <span className="text-h3 text-text">{p.titulo}</span>
-              </p>
-              <p className="mt-2 text-body text-pretty text-text-muted">{p.texto}</p>
-            </Card>
+              <div>
+                <p className="flex items-center gap-3 md:mt-5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-primary text-small font-semibold text-white">
+                    {i + 1}
+                  </span>
+                  <span className="text-h3 text-text">{p.titulo}</span>
+                </p>
+                <p className="mt-2 text-body text-pretty text-text-muted">{p.texto}</p>
+              </div>
+            </li>
           ))}
         </ol>
       </Secao>
 
       {/* 4. Serviços */}
-      <Secao titulo="Serviços mais procurados">
+      <Secao titulo="Serviços mais procurados" fundo="bg-surface">
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {SERVICOS.map((a) => (
             <li key={a.titulo}>
-              <CardAtalho atalho={a} />
+              <CardAtalho atalho={a} tom={TOM_SERVICO} />
             </li>
           ))}
         </ul>
@@ -212,11 +224,11 @@ export default async function Inicio() {
         </div>
       </Secao>
 
-      {/* 6. Faixa para veterinários */}
-      <section className="mt-6 bg-accent md:mt-8">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_18rem] md:items-center md:py-12 lg:grid-cols-[1fr_22rem]">
+      {/* 6. Faixa para veterinários: o único accent desta área é o botão */}
+      <section className="tema-escuro bg-primary-dark bg-patinhas-claras">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1fr_18rem] md:items-center md:py-16 lg:grid-cols-[1fr_22rem]">
           <div>
-            <h2 className="text-h1 text-balance text-text">É veterinário? Seja encontrado por quem está procurando</h2>
+            <h2 className="text-h1 text-balance text-background">É veterinário? Seja encontrado por quem está procurando</h2>
             <ul className="mt-6 space-y-3">
               {[
                 { icone: Search, texto: "Apareça na busca da sua região sem pagar anúncio nem entender de tráfego pago" },
@@ -228,13 +240,15 @@ export default async function Inicio() {
                     : "Cadastro em poucos minutos: avisamos quando seu perfil for ao ar",
                 },
               ].map((b) => (
-                <li key={b.texto} className="flex gap-3 text-body text-text">
-                  <Icon icon={b.icone} className="mt-0.5" />
-                  {b.texto}
+                <li key={b.texto} className="flex items-start gap-3 text-body text-sage-200">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-primary">
+                    <Icon icon={b.icone} size="sm" />
+                  </span>
+                  <span className="pt-1">{b.texto}</span>
                 </li>
               ))}
             </ul>
-            <ButtonLink href="/sou-veterinario" variant="secondary" size="lg" className="mt-8 w-full sm:w-auto">
+            <ButtonLink href="/sou-veterinario" variant="accent" size="lg" className="mt-8 w-full sm:w-auto">
               {PUBLICAR_PRE_CADASTRO_DIRETO ? "Criar meu perfil" : "Entrar na lista de espera"}
             </ButtonLink>
           </div>
@@ -249,7 +263,7 @@ export default async function Inicio() {
       </section>
 
       {/* 7. Perguntas frequentes */}
-      <Secao titulo="Perguntas frequentes" estreita>
+      <Secao titulo="Perguntas frequentes" estreita fundo="bg-caramel-100">
         <Card padding="none" className="px-4 py-1 sm:px-6">
           {PERGUNTAS.map((p) => (
             <Disclosure key={p.pergunta} title={p.pergunta}>
@@ -264,19 +278,42 @@ export default async function Inicio() {
   );
 }
 
-function Secao({ titulo, estreita, children }: { titulo: string; estreita?: boolean; children: React.ReactNode }) {
+// Cada seção ocupa a largura toda com o seu fundo; o conteúdo fica centralizado.
+function Secao({
+  titulo,
+  estreita,
+  fundo = "bg-background",
+  children,
+}: {
+  titulo: string;
+  estreita?: boolean;
+  fundo?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className={cn("mx-auto px-4 py-6 sm:px-6 md:py-8", estreita ? "max-w-3xl" : "max-w-6xl")}>
-      <h2 className="mb-4 text-h2 text-text md:mb-6">{titulo}</h2>
-      {children}
+    <section className={fundo}>
+      <div className={cn("mx-auto px-4 py-10 sm:px-6 md:py-16", estreita ? "max-w-3xl" : "max-w-6xl")}>
+        <h2 className="mb-4 text-h2 text-text md:mb-6">{titulo}</h2>
+        {children}
+      </div>
     </section>
   );
 }
 
-function CardAtalho({ atalho: a }: { atalho: Atalho }) {
+// Bloco colorido: sem borda nem sombra (o tom já separa); círculo do ícone num tom mais forte.
+type Tom = { bloco: string; circulo: string };
+const TONS_ESPECIE: Tom[] = [
+  { bloco: "bg-sage-100", circulo: "bg-sage-200 text-primary" },
+  { bloco: "bg-caramel-100", circulo: "bg-caramel-200 text-accent-strong" },
+  { bloco: "bg-sky-100", circulo: "bg-surface text-info-strong" },
+];
+const TOM_SERVICO: Tom = { bloco: "bg-background", circulo: "bg-accent-soft text-accent-strong" };
+
+function CardAtalho({ atalho: a, tom }: { atalho: Atalho; tom: Tom }) {
+  const bloco = cn("flex h-full flex-col gap-3 rounded-card p-4", tom.bloco);
   const cabecalho = (
     <>
-      <span className="flex size-12 items-center justify-center rounded-pill bg-primary-soft text-primary">
+      <span className={cn("flex size-12 items-center justify-center rounded-pill", tom.circulo)}>
         <Icon icon={a.icone} size="lg" />
       </span>
       <span className="text-body font-semibold text-text">{a.titulo}</span>
@@ -285,17 +322,14 @@ function CardAtalho({ atalho: a }: { atalho: Atalho }) {
 
   if (a.href) {
     return (
-      <Link
-        href={a.href}
-        className={cn(cardClasses({ padding: "md" }), "flex h-full flex-col justify-center gap-3 transition-colors hover:border-primary")}
-      >
+      <Link href={a.href} className={cn(bloco, "justify-center transition-shadow hover:ring-2 hover:ring-primary")}>
         {cabecalho}
       </Link>
     );
   }
 
   return (
-    <div className={cn(cardClasses({ padding: "md" }), "flex h-full flex-col gap-3")}>
+    <div className={bloco}>
       {cabecalho}
       <ul className="flex flex-wrap gap-2">
         {a.opcoes!.map((o) => (

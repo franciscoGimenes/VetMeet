@@ -103,11 +103,14 @@ export function BuscaLayout({
   catalogos,
   filtros,
   chave = "",
+  titulo,
   children,
 }: {
   catalogos: Catalogos;
   filtros: Filtros;
   chave?: string;
+  // Título da página (h1), mostrado no cabeçalho em sage-100.
+  titulo: string;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -250,54 +253,60 @@ export function BuscaLayout({
           : `Ver ${total} resultados`;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
-      {/* Nome + botão de filtros: fixos no topo ao rolar (no celular) */}
-      <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:mb-6 lg:rounded-card lg:border lg:bg-surface lg:p-4 lg:shadow-card">
-        <form
-          role="search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            aplicar();
-          }}
-          className="flex items-end gap-2"
-        >
-          <div className="min-w-0 flex-1">
-            <label htmlFor={ID_NOME} className="mb-1 flex items-center gap-1.5 text-caption font-medium text-text-muted">
-              <Icon icon={Search} size="sm" /> Nome do veterinário ou clínica
-            </label>
-            <div className="relative">
-              <Input
-                id={ID_NOME}
-                type="search"
-                enterKeyHint="search"
-                autoComplete="off"
-                maxLength={NOME_MAX}
-                placeholder="Ex.: Ana, Hospital Lacerda"
-                value={termo}
-                onChange={(e) => setTermo(e.target.value)}
-                className="pr-12 [&::-webkit-search-cancel-button]:hidden"
-              />
-              {termo && (
-                <Button
-                  variant="ghost"
-                  iconOnly
-                  aria-label="Limpar nome"
-                  onClick={() => setTermo("")}
-                  className="absolute top-0 right-0"
-                >
-                  <Icon icon={X} />
-                </Button>
-              )}
+    <div className="pb-16">
+      {/* Cabeçalho da página em sage-100: título + campo de nome */}
+      <div className="bg-sage-100">
+        <h1 className="mx-auto max-w-6xl px-4 pt-6 text-h2 text-balance text-text sm:px-6 lg:pt-10">{titulo}</h1>
+      </div>
+      {/* Nome + botão de filtros: fixos no topo ao rolar (no celular), continuando a faixa */}
+      <div className="sticky top-0 z-30 border-b border-sage-200 bg-sage-100/95 backdrop-blur lg:static lg:bg-sage-100">
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 lg:pt-4 lg:pb-8">
+          <form
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              aplicar();
+            }}
+            className="flex items-end gap-2 lg:max-w-xl"
+          >
+            <div className="min-w-0 flex-1">
+              <label htmlFor={ID_NOME} className="mb-1 flex items-center gap-1.5 text-caption font-medium text-text-muted">
+                <Icon icon={Search} size="sm" /> Nome do veterinário ou clínica
+              </label>
+              <div className="relative">
+                <Input
+                  id={ID_NOME}
+                  type="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  maxLength={NOME_MAX}
+                  placeholder="Ex.: Ana, Hospital Lacerda"
+                  value={termo}
+                  onChange={(e) => setTermo(e.target.value)}
+                  className="pr-12 [&::-webkit-search-cancel-button]:hidden"
+                />
+                {termo && (
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    aria-label="Limpar nome"
+                    onClick={() => setTermo("")}
+                    className="absolute top-0 right-0"
+                  >
+                    <Icon icon={X} />
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-          <Button variant="secondary" onClick={abrirGaveta} className="lg:hidden" aria-haspopup="dialog">
-            <Icon icon={SlidersHorizontal} />
-            {ativos > 0 ? `Filtros (${ativos})` : "Filtros"}
-          </Button>
-        </form>
+            <Button variant="secondary" onClick={abrirGaveta} className="lg:hidden" aria-haspopup="dialog">
+              <Icon icon={SlidersHorizontal} />
+              {ativos > 0 ? `Filtros (${ativos})` : "Filtros"}
+            </Button>
+          </form>
+        </div>
       </div>
 
-      <div className="mt-4 lg:mt-0 lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8">
+      <div className="mx-auto mt-4 w-full max-w-6xl px-4 sm:px-6 lg:mt-8 lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8">
         {/* Filtros: sheet em tela cheia no celular, barra lateral no desktop */}
         <Sheet
           open={gavetaAberta}
