@@ -2,11 +2,13 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "whatsapp";
+export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "whatsapp";
 export type ButtonSize = "md" | "lg";
 
 const VARIANTES: Record<ButtonVariant, string> = {
   primary: "bg-primary text-white hover:bg-primary-hover",
+  // CTA de destaque: no máximo um por área visível. Texto escuro (branco sobre accent reprova).
+  accent: "bg-accent text-text hover:bg-caramel-200",
   secondary: "border border-border-strong bg-surface text-text hover:bg-background",
   ghost: "text-primary hover:bg-primary-soft",
   whatsapp: "bg-whatsapp text-white hover:bg-whatsapp-hover",

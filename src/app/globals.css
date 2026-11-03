@@ -24,7 +24,7 @@
   --color-text: #1e2a27;
   --color-text-muted: #5f6f6a;
   --color-border: #e4e0d8;
-  --color-border-strong: #918e89;
+  --color-border-strong: #8a8782;
   --color-success: #2f9e6b;
   --color-success-strong: #268057;
   --color-warning: #d9a23b;
@@ -36,6 +36,14 @@
   --color-whatsapp: #15803d;
   --color-whatsapp-hover: #166534;
   --color-chart: #16846a;
+
+  /* Tons de apoio: fundos de seção e blocos (ver "Distribuição de cor"). */
+  --color-primary-dark: #134438;
+  --color-sage-100: #eef5f1;
+  --color-sage-200: #d3e8de;
+  --color-caramel-100: #fdf4ea;
+  --color-caramel-200: #f6dcbf;
+  --color-sky-100: #eaf2f8;
 
   --font-*: initial;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -56,6 +64,21 @@
   --shadow-*: initial;
   --shadow-card: 0 1px 2px rgb(30 42 39 / 0.06), 0 1px 3px rgb(30 42 39 / 0.04);
   --shadow-overlay: 0 12px 32px rgb(30 42 39 / 0.18), 0 2px 6px rgb(30 42 39 / 0.08);
+}
+
+/* Padrão de patinhas (decoração em no máximo 2 seções). SVG embutido: nenhuma requisição. */
+@utility bg-patinhas {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%231F6F5C' fill-opacity='.07'%3E%3Cg transform='translate(12 14) rotate(-18 32 32) scale(.42)'%3E%3Cellipse cx='32' cy='42' rx='15' ry='13'/%3E%3Cellipse cx='10' cy='25' rx='6' ry='8' transform='rotate(-22 10 25)'/%3E%3Cellipse cx='23' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='41' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='54' cy='25' rx='6' ry='8' transform='rotate(22 54 25)'/%3E%3C/g%3E%3Cg transform='translate(70 66) rotate(16 32 32) scale(.42)'%3E%3Cellipse cx='32' cy='42' rx='15' ry='13'/%3E%3Cellipse cx='10' cy='25' rx='6' ry='8' transform='rotate(-22 10 25)'/%3E%3Cellipse cx='23' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='41' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='54' cy='25' rx='6' ry='8' transform='rotate(22 54 25)'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+@utility bg-patinhas-claras {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23FFFFFF' fill-opacity='.05'%3E%3Cg transform='translate(12 14) rotate(-18 32 32) scale(.42)'%3E%3Cellipse cx='32' cy='42' rx='15' ry='13'/%3E%3Cellipse cx='10' cy='25' rx='6' ry='8' transform='rotate(-22 10 25)'/%3E%3Cellipse cx='23' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='41' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='54' cy='25' rx='6' ry='8' transform='rotate(22 54 25)'/%3E%3C/g%3E%3Cg transform='translate(70 66) rotate(16 32 32) scale(.42)'%3E%3Cellipse cx='32' cy='42' rx='15' ry='13'/%3E%3Cellipse cx='10' cy='25' rx='6' ry='8' transform='rotate(-22 10 25)'/%3E%3Cellipse cx='23' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='41' cy='11' rx='7' ry='8.5'/%3E%3Cellipse cx='54' cy='25' rx='6' ry='8' transform='rotate(22 54 25)'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+
+/* Faixas escuras (primary-dark): o anel de foco em primary sumiria (1,82:1). */
+@utility tema-escuro {
+  --cor-foco: var(--color-background);
 }
 
 /* Escala tipográfica: cada token carrega família, peso, tamanho e entrelinha. */
@@ -121,7 +144,7 @@
 
   /* Foco sempre visível, igual em todo o site. */
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--cor-foco, var(--color-primary));
     outline-offset: 2px;
   }
 }

@@ -53,13 +53,17 @@ reestilizar elementos soltos.
 | text | #1E2A27 | texto principal |
 | text-muted | #5F6F6A | texto secundário |
 | border | #E4E0D8 | divisórias e contorno de cards |
-| border-strong | #918E89 | contorno de inputs, selects e checkboxes (3:1) |
+| border-strong | #8A8782 | contorno de inputs, selects e checkboxes (3:1 também sobre os tons -100) |
 | success / success-strong | #2F9E6B / #268057 | base: fundo, ícone, borda · strong: texto |
 | warning / warning-strong | #D9A23B / #906C27 | idem |
 | error / error-strong | #C8553D / #BC5039 | idem |
 | info / info-strong | #3A7CA5 / #3878A0 | idem |
 | whatsapp / whatsapp-hover | #15803D / #166534 | só o botão de WhatsApp |
 | chart | #16846A | marcas de gráfico com uma série (mesmo matiz de primary, com saturação suficiente: validado com a skill dataviz) |
+| primary-dark | #134438 | faixas escuras (chamada para veterinários, rodapé) |
+| sage-100 / sage-200 | #EEF5F1 / #D3E8DE | fundos de seção e blocos de apoio (verde) |
+| caramel-100 / caramel-200 | #FDF4EA / #F6DCBF | fundos de seção e blocos de apoio (caramelo) |
+| sky-100 | #EAF2F8 | terceiro tom de apoio, uso pontual (cards de espécie) |
 
 Regras:
 - `accent` nunca é cor de texto sobre fundo claro (2,67:1). Texto sobre `accent` é sempre `text`.
@@ -75,9 +79,43 @@ text-muted sobre background 4,99 · surface 5,29 · primary-soft 4,55 · accent-
 branco sobre primary 6,02 · primary-hover 8,07 · whatsapp 5,02 |
 primary sobre surface 6,02 · background 5,68 · primary-soft 5,18 |
 accent-strong sobre accent-soft 4,56 · surface 5,20 · background 4,91 |
-*-strong sobre surface ≥ 4,8 e sobre background ≥ 4,5 | border-strong sobre surface 3,26.
+*-strong sobre surface ≥ 4,8 e sobre background ≥ 4,5 |
+text sobre sage-100 13,40 · sage-200 11,56 · caramel-100 13,64 · caramel-200 11,24 · sky-100 13,11 |
+text-muted sobre sage-100 4,78 · caramel-100 4,86 · sky-100 4,68 |
+primary sobre sage-100 5,44 · sage-200 4,69 · caramel-100 5,54 · sky-100 5,32 |
+accent-strong sobre caramel-100 4,78 · sage-100 4,70 |
+sobre primary-dark: background 10,36 · branco 10,99 · sage-200 8,56 · caramel-200 8,32 |
+accent (botão) sobre primary-dark 4,12 · text sobre accent 5,56 |
+border-strong sobre surface 3,58 · background 3,37 · sage-100 3,23 · caramel-100 3,29 · sky-100 3,16.
 Reprovados (não usar): accent como texto (2,67), branco sobre accent (2,67), cores base de
-status como texto, border como contorno de campo (1,32).
+status como texto, border como contorno de campo (1,32), text-muted sobre sage-200 (4,12) e
+caramel-200 (4,01), accent-strong como texto sobre caramel-200 (3,94), primary sobre
+primary-dark (1,82).
+Por isso: tons -200 só levam texto `text` ou `primary`; em faixa `primary-dark` (classe
+`tema-escuro`) o anel de foco passa a ser `background`.
+
+### Distribuição de cor
+- O off-white (`background`) não é fundo de todas as seções: seções vizinhas alternam fundo.
+- Home: hero em sage-100 com formas orgânicas em primary-soft e accent-soft · espécies em
+  surface · "Como funciona" em background · serviços em surface · cidades em background ·
+  faixa para veterinários em primary-dark, texto claro e CTA em accent · FAQ em caramel-100 ·
+  rodapé em primary-dark.
+- Um ponto memorável por tela. Na home é o hero (foto sobre forma orgânica, patinhas); o resto
+  fica calmo. O padrão de patinhas aparece só no hero e na faixa para veterinários.
+- Bloco colorido não leva borda nem sombra: o tom já separa. Borda + `shadow-card` ficam para
+  cards brancos. Cards de espécie alternam sage, caramel e sky, com ícone em círculo colorido.
+- Ícone de destaque fica em círculo colorido (primary-soft, accent-soft ou o tom -200 do bloco).
+  Ícones dentro de botões, links e listas continuam soltos.
+- Botão principal em primary. CTA de destaque: `Button variant="accent"` (fundo accent, texto
+  `text`, nunca branco).
+- Busca: cabeçalho da página em sage-100; chips selecionados em primary com texto branco
+  (vale para todo chip do site).
+- Perfil: faixa sage-100 no topo, atrás da foto; títulos de seção com ícone em círculo colorido.
+- **No máximo 1 elemento accent por área visível** (uma tela de altura). Selo de demonstração e
+  dedos do logo não contam.
+- Decoração: formas orgânicas (`src/components/decor`, SVG inline, `aria-hidden`) e o padrão de
+  patinhas (`bg-patinhas` / `bg-patinhas-claras`, SVG em data URI no CSS: zero requisição).
+  Sem animação de entrada nas seções; movimento só como resposta a uma ação.
 
 ### Tipografia
 Fontes via `next/font` (sem link externo):
@@ -107,7 +145,7 @@ Escala (cada token já define família, peso, tamanho e entrelinha):
 - Espaçamento: escala de 4px do Tailwind, sem valores arbitrários. Margem lateral da página
   16px (mobile) / 24px (desktop); padding de card 16px / 24px; espaço entre seções 24px / 32px.
   Ritmo vertical: blocos e cards de uma tela usam `mt-6 md:mt-8` / `gap-6 md:gap-8`; na página
-  inicial cada seção tem `py-6 md:py-8`. `Card padding="lg"` é o padrão (16/24); `md` (16) só em
+  inicial cada seção tem fundo próprio e `py-10 md:py-16`. `Card padding="lg"` é o padrão (16/24); `md` (16) só em
   cards de lista.
 - Estados: `src/app/error.tsx` cobre falhas inesperadas; os esqueletos de `Esqueletos.tsx`
   imitam a forma da tela e têm `min-h-dvh` (sem isso o rodapé pula e o CLS sobe).
@@ -121,7 +159,7 @@ Escala (cada token já define família, peso, tamanho e entrelinha):
 - Nunca remover outline sem pôr o anel no lugar.
 
 ### Componentes base (`src/components/ui`)
-Button (primary, secondary, ghost, whatsapp; tamanhos md 44px e lg 52px), Chip (selecionável),
+Button (primary, accent, secondary, ghost, whatsapp; tamanhos md 44px e lg 52px), Chip (selecionável),
 OptionRow (linha inteira clicável com checkbox/radio desenhado), Disclosure (seção recolhível),
 Input, Select, Card, Badge, Sheet (bottom sheet no celular; `telaCheia` e `estaticoNoDesktop`).
 Variações novas entram no componente, não na tela.
@@ -161,6 +199,8 @@ Instagram usa `AtSign`, sempre com o nome escrito ao lado.
   completo). Favicon, ícone da Apple e imagem de compartilhamento usam as convenções de arquivo
   do Next em `src/app` (`favicon.ico`, `icon.svg`, `apple-icon.png`, `opengraph-image.png`), que
   são cópias dos arquivos de `public/brand`. O manifest está em `src/app/manifest.ts`.
+- O logo aparece em todas as telas (cabeçalho no layout raiz). Sobre primary-dark (rodapé) usa
+  `logo-negativo.svg` (`<Logo negativo />`).
 - Não redesenhe nem recolora o logo à mão; mudanças entram no kit inteiro.
 
 ### Arquivos de imagem

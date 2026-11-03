@@ -11,7 +11,7 @@ export function chipClasses({ selected = false }: { selected?: boolean } = {}) {
   return cn(
     BASE,
     selected
-      ? "border-primary bg-primary-soft font-medium text-primary hover:bg-primary-soft"
+      ? "border-primary bg-primary font-medium text-white hover:border-primary-hover hover:bg-primary-hover"
       : "border-border-strong bg-surface text-text hover:border-text-muted",
   );
 }
@@ -47,7 +47,7 @@ export function Chip({
         className={cn(
           BASE,
           "border-border-strong bg-surface text-text hover:border-text-muted",
-          "peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:font-medium peer-checked:text-primary",
+          "peer-checked:border-primary peer-checked:bg-primary peer-checked:font-medium peer-checked:text-white peer-checked:hover:bg-primary-hover",
           "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary",
           "[&>svg]:hidden peer-checked:[&>svg]:block",
         )}
