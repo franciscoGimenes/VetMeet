@@ -137,8 +137,8 @@ Por isso: tons -200 só levam texto `text` ou `primary`; em faixa `primary-dark`
 - O off-white (`background`) não é fundo de todas as seções: seções vizinhas alternam fundo.
 - Home: hero em sage-100 com formas orgânicas em primary-soft e accent-soft · espécies em
   surface · "Como funciona" em background · serviços em surface · cidades em background ·
-  faixa para veterinários em primary-dark, texto claro e CTA em accent · FAQ em caramel-100 ·
-  rodapé em primary-dark.
+  "Na Rede dos veterinários" (3 posts recentes) em surface · faixa para veterinários em
+  primary-dark, texto claro e CTA em accent · FAQ em caramel-100 · rodapé em primary-dark.
 - Um ponto memorável por tela. Na home é o hero (foto sobre forma orgânica, patinhas); o resto
   fica calmo. O padrão de patinhas aparece só no hero e na faixa para veterinários.
 - Bloco colorido não leva borda nem sombra: o tom já separa. Borda + `shadow-card` ficam para
@@ -250,6 +250,9 @@ Fotos em `public/images/` (as da página inicial em `public/images/home/`, reduz
 - `/sou-veterinario`: criar conta (e-mail e senha ou LinkedIn). `/entrar` e `/entrar/recuperar`: login e recuperação de senha.
 - `/conta` (logado): "Meu perfil" com foto, status, pausar e excluir conta · `/conta/aceite` · `/conta/perfil` (criar e editar) · `/conta/nova-senha`.
 - `/termos` e `/privacidade`: texto-base, versões em `src/lib/termos.ts`.
+- `/rede`: feed público (filtros categoria, espécie, serviço e região na URL; "Carregar mais" por cursor) · `/rede/post/[id]`: post com comentários, SEO e Open Graph (primeira foto) · `/rede/novo` e `/rede/post/[id]/editar` (logado).
+- `/vet/[slug]?aba=publicacoes`: aba "Publicações" do perfil, com até 3 fixadas em "Em destaque".
+- Cabeçalho: Buscar (só ícone abaixo de 420px), Rede e Sou veterinário.
 - O rodapé está no layout raiz. O e-mail de contato vem de `NEXT_PUBLIC_CONTATO_EMAIL`; sem ele, a linha de contato some.
 
 ## Modelo de dados (base)
@@ -272,6 +275,7 @@ Tabelas principais (ajuste nomes/tipos se tiver motivo, mas mantenha a normaliza
 - `vet_waitlist_tentativas`: hash do IP por envio do pré-cadastro, para o limite de 5/hora (nunca o IP em claro)
 - `search_events`: buscas exibidas (filtros jsonb, local text[], total). Registradas pelo navegador via `/api/busca`, não na renderização do servidor (pré-carregamento de links inflaria os números)
 - `admins`: e-mails com acesso ao painel `/admin`
+- Rede: `posts` (veterinarian_id em cascata, categoria enum `post_categoria`, texto até 3.000, is_demo copiado do autor, fixado_em, contadores curtidas/comentarios mantidos por trigger, editado_em) · `post_images` (caminho no bucket `fotos-rede`, largura, altura, ordem 0 a 5) · `post_species` / `post_services` (marcações) · `post_likes` (post, veterinário) · `post_comments` (até 1.000 caracteres, sem edição)
 
 Use RLS no Supabase:
 - Leitura pública: catálogos e veterinários `status = 'ativo'` (e seus vínculos).
@@ -283,6 +287,10 @@ Use RLS no Supabase:
 - `vet_waitlist`, `vet_waitlist_tentativas` e `search_events` são gravados só pelo servidor com a service role (`src/lib/supabase/admin.ts`), depois de validação, honeypot e limite por IP. Não volte a abrir insert público nelas: isso permitiria contornar essas proteções pela API do Supabase com a chave pública.
 - Leitura de `vet_waitlist`, `contact_events`, `search_events` e `reports`: só usuários logados presentes em `admins` com e-mail confirmado (`public.is_admin()`, security definer porque lê `auth.users`; `admin_lista_espera()` idem).
 - Funções RPC: prefira `security invoker` (o RLS continua valendo).
+- Rede: público lê posts de perfis `ativo` (fotos, marcações, curtidas e comentários seguem o post; comentário de autor pausado some). O autor cria, edita, fixa e apaga os seus (`posts_guard` trava dono, demo, contadores e limita 3 fixados). Curtir e comentar: só perfil ativo do próprio usuário (`e_meu_perfil_ativo`), nunca curtir o próprio post. Apagar comentário: quem escreveu ou o autor do post. Post inteiro salvo por `salvar_post(jsonb)`; feed por `buscar_posts` (ambos invoker).
+- Fotos da Rede: bucket público `fotos-rede`, pasta `{user_id}/`; o navegador reduz para 1600px e reencoda em WebP (JPEG no Safari), sem EXIF (`src/lib/imagem.ts`). Excluir post ou conta apaga os arquivos.
+- Cache da Rede: tag `rede` (`TAG_REDE` em `src/lib/posts.ts`), invalidada com `updateTag` em toda ação que muda posts, curtidas, comentários ou o perfil. O que depende de quem está vendo (curtidas dele, menu do autor) é lido por requisição (`src/lib/visitante.ts`).
+- `posts` liga a `veterinarians` por mais de um caminho (autor, curtidas, comentários): nos selects, use `veterinarians!posts_veterinarian_id_fkey` (ou a FK de `post_comments`).
 
 ## Perfis no ar
 - Sem aprovação manual nesta fase: o perfil entra ativo ao publicar, com o selo "CRMV não verificado".
@@ -335,6 +343,7 @@ Filtros devem ser combináveis e refletidos na URL (query string), para que busc
 ## Dados de demonstração
 - Todo perfil fake tem `is_demo = true` e exibe na UI o selo "Perfil de demonstração".
 - Deve existir um script/SQL simples para remover todos os perfis demo e seus vínculos.
+- Posts demo da Rede: `supabase/seed_rede.sql` (depois do `seed.sql`; ids estáveis por `md5(slug:n)`, sem fotos). Saem em cascata com os perfis demo.
 - Os dados precisam parecer de mercado, não mecânicos: nomes brasileiros variados, bios com voz própria, preços quebrados e coerentes com a região (ex.: consulta em clínica entre R$ 130 e R$ 260; domiciliar entre R$ 180 e R$ 380; castração de gata entre R$ 380 e R$ 750; castração de cão variando por porte até ~R$ 1.400). Distribuição desigual entre cidades, como na realidade (Mogi e Suzano com mais oferta, Salesópolis e Biritiba com pouca).
 - Números de CRMV fictícios e `crmv_verificado = false` nos demos. Nunca usar dados de pessoas reais.
 
