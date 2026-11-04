@@ -261,6 +261,223 @@ export type Database = {
         }
         Relationships: []
       }
+      post_comments: {
+        Row: {
+          created_at: string
+          id: number
+          post_id: string
+          texto: string
+          veterinarian_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          post_id: string
+          texto: string
+          veterinarian_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          post_id?: string
+          texto?: string
+          veterinarian_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_veterinarian_id_fkey"
+            columns: ["veterinarian_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_images: {
+        Row: {
+          altura: number
+          caminho: string
+          id: number
+          largura: number
+          ordem: number
+          post_id: string
+        }
+        Insert: {
+          altura: number
+          caminho: string
+          id?: never
+          largura: number
+          ordem: number
+          post_id: string
+        }
+        Update: {
+          altura?: number
+          caminho?: string
+          id?: never
+          largura?: number
+          ordem?: number
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          post_id: string
+          veterinarian_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          veterinarian_id: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          veterinarian_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_veterinarian_id_fkey"
+            columns: ["veterinarian_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_services: {
+        Row: {
+          post_id: string
+          service_id: number
+        }
+        Insert: {
+          post_id: string
+          service_id: number
+        }
+        Update: {
+          post_id?: string
+          service_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_services_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_species: {
+        Row: {
+          post_id: string
+          species_id: number
+        }
+        Insert: {
+          post_id: string
+          species_id: number
+        }
+        Update: {
+          post_id?: string
+          species_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_species_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_species_species_id_fkey"
+            columns: ["species_id"]
+            isOneToOne: false
+            referencedRelation: "species"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          categoria: Database["public"]["Enums"]["post_categoria"]
+          comentarios: number
+          created_at: string
+          curtidas: number
+          editado_em: string | null
+          fixado_em: string | null
+          id: string
+          is_demo: boolean
+          texto: string
+          updated_at: string
+          veterinarian_id: string
+        }
+        Insert: {
+          categoria: Database["public"]["Enums"]["post_categoria"]
+          comentarios?: number
+          created_at?: string
+          curtidas?: number
+          editado_em?: string | null
+          fixado_em?: string | null
+          id?: string
+          is_demo?: boolean
+          texto: string
+          updated_at?: string
+          veterinarian_id: string
+        }
+        Update: {
+          categoria?: Database["public"]["Enums"]["post_categoria"]
+          comentarios?: number
+          created_at?: string
+          curtidas?: number
+          editado_em?: string | null
+          fixado_em?: string | null
+          id?: string
+          is_demo?: boolean
+          texto?: string
+          updated_at?: string
+          veterinarian_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_veterinarian_id_fkey"
+            columns: ["veterinarian_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regions: {
         Row: {
           id: number
@@ -739,6 +956,19 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      buscar_posts: {
+        Args: {
+          p_antes?: string
+          p_antes_id?: string
+          p_autor?: string
+          p_categoria?: Database["public"]["Enums"]["post_categoria"]
+          p_especie?: string
+          p_limite?: number
+          p_regioes?: string[]
+          p_servico?: string
+        }
+        Returns: string[]
+      }
       buscar_veterinarios: {
         Args: {
           p_area?: string
@@ -758,6 +988,8 @@ export type Database = {
         }
         Returns: Json
       }
+      e_dono_do_post: { Args: { p_post: string }; Returns: boolean }
+      e_meu_perfil_ativo: { Args: { p_vet: string }; Returns: boolean }
       e_dono_do_veterinario: {
         Args: {
           p_vet: string
@@ -774,6 +1006,7 @@ export type Database = {
         }
         Returns: Json
       }
+      salvar_post: { Args: { p: Json }; Returns: string }
       salvar_meu_perfil: {
         Args: {
           p: Json
@@ -792,6 +1025,13 @@ export type Database = {
     Enums: {
       contact_canal: "whatsapp" | "instagram" | "maps"
       contact_origem: "card" | "perfil"
+      post_categoria:
+        | "dica_tutores"
+        | "relato_caso"
+        | "atendimento"
+        | "bastidores"
+        | "curso_capacitacao"
+        | "outros"
       regiao_macro: "alto_tiete" | "zona_leste_sp"
       region_tipo: "municipio" | "subprefeitura"
       report_motivo:
@@ -932,6 +1172,14 @@ export const Constants = {
     Enums: {
       contact_canal: ["whatsapp", "instagram", "maps"],
       contact_origem: ["card", "perfil"],
+      post_categoria: [
+        "dica_tutores",
+        "relato_caso",
+        "atendimento",
+        "bastidores",
+        "curso_capacitacao",
+        "outros",
+      ],
       regiao_macro: ["alto_tiete", "zona_leste_sp"],
       region_tipo: ["municipio", "subprefeitura"],
       report_motivo: [
