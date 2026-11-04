@@ -1,12 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { enviarEmail, escaparHtml } from "@/lib/email";
+import { excluirUsuario } from "@/lib/exclusao";
+import { TAG_REDE } from "@/lib/posts";
+import { eUuid } from "@/lib/rede";
 import { SITE_URL } from "@/lib/site";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
+import { TAG_VETERINARIOS } from "@/lib/veterinarios";
 
 export async function sair() {
   const supabase = await createClient();
@@ -68,4 +72,71 @@ export async function atualizarDenuncia(form: FormData) {
   // Com o RLS de admin, o próprio usuário logado altera (sem service role).
   await supabase.from("reports").update({ status }).eq("id", Number(form.get("id")));
   revalidatePath("/admin");
+}
+
+export type EstadoPerfilAdmin = { erro?: string };
+
+// Tirar do ar (inativo: some da busca, do perfil público e da Rede; o
+// veterinário não consegue reverter) ou pôr de volta no ar.
+export async function alterarStatusPerfil(form: FormData) {
+  await exigirAdmin();
+  const id = String(form.get("id") ?? "");
+  const status = String(form.get("status") ?? "");
+  if (!eUuid(id) || (status !== "ativo" && status !== "inativo")) return;
+  // Service role: o trigger veterinarians_guard só trava a sessão do veterinário.
+  const { error } = await createAdminClient().from("veterinarians").update({ status }).eq("id", id);
+  if (error) console.error("status do perfil:", error.message);
+  updateTag(TAG_VETERINARIOS);
+  updateTag(TAG_REDE);
+  revalidatePath("/admin");
+}
+
+// Exclui de vez. Com conta: apaga a conta (perfil, publicações e fotos vão
+// junto) e a pessoa pode se cadastrar de novo. Sem conta (perfil publicado do
+// pré-cadastro antigo): apaga só o perfil. Conta de admin nunca é apagada aqui.
+export async function excluirPerfilAdmin(_anterior: EstadoPerfilAdmin, form: FormData): Promise<EstadoPerfilAdmin> {
+  const supabase = await exigirAdmin();
+  const vetId = String(form.get("vet_id") ?? "");
+  const userIdForm = String(form.get("user_id") ?? "");
+  const admin = createAdminClient();
+
+  let userId: string | null = null;
+  if (eUuid(vetId)) {
+    const { data: vet } = await admin.from("veterinarians").select("id, user_id").eq("id", vetId).maybeSingle();
+    if (!vet) return { erro: "Perfil não encontrado. Atualize a página." };
+    userId = vet.user_id;
+    if (!userId) {
+      const { error } = await admin.from("veterinarians").delete().eq("id", vet.id);
+      if (error) {
+        console.error("excluir perfil:", error.message);
+        return { erro: "Não foi possível excluir agora." };
+      }
+    }
+  } else if (eUuid(userIdForm)) {
+    userId = userIdForm;
+  } else {
+    return { erro: "Pedido inválido." };
+  }
+
+  if (userId) {
+    const { data: alvo } = await admin.auth.admin.getUserById(userId);
+    const email = alvo.user?.email?.toLowerCase();
+    if (email) {
+      const { data: eAdmin } = await admin.from("admins").select("email").eq("email", email).maybeSingle();
+      const {
+        data: { user: eu },
+      } = await supabase.auth.getUser();
+      if (eAdmin || eu?.id === userId) return { erro: "Contas de administrador não são excluídas pelo painel." };
+    }
+    const { error } = await excluirUsuario(admin, userId);
+    if (error) {
+      console.error("excluir conta (admin):", error.message);
+      return { erro: "Não foi possível excluir agora." };
+    }
+  }
+
+  updateTag(TAG_VETERINARIOS);
+  updateTag(TAG_REDE);
+  revalidatePath("/admin");
+  return {};
 }

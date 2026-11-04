@@ -1,15 +1,18 @@
+import { CircleCheck, CircleDashed, CircleOff, CirclePause } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { EsqueletoAdmin } from "@/components/Esqueletos";
-import { Badge, Button, Card, buttonClasses } from "@/components/ui";
+import { Badge, Button, Card, Icon, buttonClasses } from "@/components/ui";
 import { getCatalogos, type Catalogos } from "@/lib/catalogos";
 import { formatarCrmv } from "@/lib/crmv";
 import { MOTIVOS_DENUNCIA } from "@/lib/denuncia";
 import { DISPONIBILIDADES } from "@/lib/filtros";
 import { createClient } from "@/lib/supabase/server";
 import { formatarTelefone } from "@/lib/whatsapp";
-import { atualizarDenuncia, sair } from "./actions";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { alterarStatusPerfil, atualizarDenuncia, sair } from "./actions";
+import { ExcluirPerfil } from "./ExcluirPerfil";
 import { BotaoConvite } from "./BotaoConvite";
 import { GraficoCliques } from "./GraficoCliques";
 
@@ -86,6 +89,8 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
   const lista = preCadastros.data ?? [];
   const listaDenuncias = denuncias.data ?? [];
   const abertas = listaDenuncias.filter((d) => d.status === "aberta").length;
+  // Só chega aqui quem passou pelo is_admin() (painel_admin acima).
+  const perfis = await listarPerfis();
 
   return (
     <>
@@ -203,6 +208,74 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
           </div>
         ) : (
           <Vazio>Nenhum clique de contato no período.</Vazio>
+        )}
+      </Bloco>
+
+      <Bloco
+        titulo={`Perfis de veterinários (${perfis.vets.length})`}
+        className="mt-6 md:mt-8"
+      >
+        <p className="-mt-2 mb-4 text-small text-text-muted">
+          Perfis reais e contas criadas. Tirar do ar esconde o perfil e as publicações (o veterinário não consegue
+          reverter); excluir apaga tudo. Os {perfis.demos} perfis demo saem pelo script de remoção.
+        </p>
+        {perfis.vets.length + perfis.semPerfil.length ? (
+          <ul className="divide-y divide-border">
+            {perfis.vets.map((v) => (
+              <li key={v.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 text-small">
+                  <p className="flex flex-wrap items-center gap-2">
+                    {v.status === "ativo" ? (
+                      <Link href={`/vet/${v.slug}`} className="inline-flex min-h-11 items-center font-medium text-text hover:underline">
+                        {v.nome}
+                      </Link>
+                    ) : (
+                      <span className="inline-flex min-h-11 items-center font-medium text-text">{v.nome}</span>
+                    )}
+                    <Badge variant={STATUS_PERFIL[v.status].variante}>
+                      <Icon icon={STATUS_PERFIL[v.status].icone} size="sm" /> {STATUS_PERFIL[v.status].rotulo}
+                    </Badge>
+                  </p>
+                  <p className="text-text">{v.crmv}</p>
+                  <p className="break-all text-text-muted">{v.email ?? "Sem conta (pré-cadastro antigo)"}</p>
+                  <p className="mt-1 text-caption text-text-muted tabular-nums">
+                    Criado em {dataCurta(v.criadoEm)} · {v.posts} {v.posts === 1 ? "publicação" : "publicações"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-start gap-2">
+                  {(v.status === "ativo" || v.status === "inativo") && (
+                    <form action={alterarStatusPerfil}>
+                      <input type="hidden" name="id" value={v.id} />
+                      <Button type="submit" name="status" value={v.status === "ativo" ? "inativo" : "ativo"} variant="secondary">
+                        {v.status === "ativo" ? "Tirar do ar" : "Pôr no ar"}
+                      </Button>
+                    </form>
+                  )}
+                  {v.admin ? (
+                    <p className="inline-flex min-h-11 items-center text-caption text-text-muted">Conta de administrador</p>
+                  ) : (
+                    <ExcluirPerfil nome={v.nome} vetId={v.id} userId={v.userId} />
+                  )}
+                </div>
+              </li>
+            ))}
+            {perfis.semPerfil.map((u) => (
+              <li key={u.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 text-small">
+                  <p className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex min-h-11 items-center font-medium break-all text-text">{u.email}</span>
+                    <Badge variant="neutral">Conta sem perfil</Badge>
+                  </p>
+                  <p className="mt-1 text-caption text-text-muted tabular-nums">Criada em {dataCurta(u.criadoEm)}</p>
+                </div>
+                <div className="flex shrink-0">
+                  <ExcluirPerfil nome={u.email} userId={u.id} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Vazio>Nenhum perfil real nem conta criada ainda.</Vazio>
         )}
       </Bloco>
 
@@ -328,6 +401,55 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
     </>
   );
 }
+
+// Perfis reais (com e-mail da conta) e contas que ainda não publicaram perfil.
+// Service role: o RLS público só mostra perfis ativos.
+async function listarPerfis() {
+  const admin = createAdminClient();
+  const [vets, contas, demos, admins] = await Promise.all([
+    admin
+      .from("veterinarians")
+      .select("id, user_id, slug, nome_exibicao, crmv_numero, crmv_uf, crmv_secundaria, status, created_at, posts!posts_veterinarian_id_fkey(count)")
+      .eq("is_demo", false)
+      .order("created_at", { ascending: false }),
+    admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    admin.from("veterinarians").select("id", { count: "exact", head: true }).eq("is_demo", true),
+    admin.from("admins").select("email"),
+  ]);
+  if (vets.error) throw new Error(vets.error.message);
+  const usuarios = contas.data?.users ?? [];
+  const emails = new Map(usuarios.map((u) => [u.id, u.email ?? null]));
+  const comPerfil = new Set((vets.data ?? []).map((v) => v.user_id));
+  const deAdmins = new Set((admins.data ?? []).map((a) => a.email));
+  return {
+    demos: demos.count ?? 0,
+    vets: (vets.data ?? []).map((v) => ({
+      id: v.id,
+      userId: v.user_id,
+      slug: v.slug,
+      nome: v.nome_exibicao,
+      crmv: formatarCrmv({ numero: v.crmv_numero, uf: v.crmv_uf, secundaria: v.crmv_secundaria }),
+      status: v.status,
+      criadoEm: v.created_at,
+      email: v.user_id ? (emails.get(v.user_id) ?? null) : null,
+      admin: deAdmins.has(((v.user_id && emails.get(v.user_id)) || "").toLowerCase()),
+      posts: v.posts[0]?.count ?? 0,
+    })),
+    semPerfil: usuarios
+      .filter((u) => !comPerfil.has(u.id) && u.email && !deAdmins.has(u.email.toLowerCase()))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .map((u) => ({ id: u.id, email: u.email!, criadoEm: u.created_at })),
+  };
+}
+
+const STATUS_PERFIL = {
+  ativo: { rotulo: "No ar", variante: "success", icone: CircleCheck },
+  pausado: { rotulo: "Pausado pelo veterinário", variante: "warning", icone: CirclePause },
+  inativo: { rotulo: "Tirado do ar", variante: "error", icone: CircleOff },
+  rascunho: { rotulo: "Rascunho", variante: "neutral", icone: CircleDashed },
+} as const;
+
+const dataCurta = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
 async function nomesDosVeterinarios(supabase: Awaited<ReturnType<typeof createClient>>, slugs: string[]) {
   if (!slugs.length) return new Map<string, string>();
