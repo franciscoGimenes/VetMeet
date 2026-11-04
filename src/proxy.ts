@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Renova a sessão do Supabase nas rotas logadas (o refresh token precisa ser
-// regravado no cookie a cada renovação) e manda quem não está logado para o login.
+// regravado no cookie a cada renovação; na Rede e no perfil, para saber quem
+// curte e comenta) e manda quem não está logado para o login.
 export async function proxy(request: NextRequest) {
   let resposta = NextResponse.next({ request });
 
@@ -44,5 +45,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/auth/:path*", "/conta/:path*", "/entrar/:path*", "/sou-veterinario"],
+  matcher: ["/admin/:path*", "/auth/:path*", "/conta/:path*", "/entrar/:path*", "/sou-veterinario", "/rede/:path*", "/vet/:path*"],
 };

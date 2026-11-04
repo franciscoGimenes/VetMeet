@@ -14,13 +14,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { BotaoContato } from "@/components/BotaoContato";
 import { DenunciarPerfil } from "@/components/DenunciarPerfil";
-import { EsqueletoPerfil } from "@/components/Esqueletos";
+import { EsqueletoListaPosts, EsqueletoPerfil } from "@/components/Esqueletos";
 import { nomeLocal } from "@/components/Resultados";
+import { Publicacoes } from "@/components/rede/Publicacoes";
 import { SeloDemo } from "@/components/SeloDemo";
 import { Badge, ButtonLink, Card, Icon, buttonClasses } from "@/components/ui";
 import { getCatalogos } from "@/lib/catalogos";
@@ -32,6 +34,7 @@ import {
   type EventoContato,
 } from "@/lib/contato";
 import { filtrosParaLog, parseFiltros, temFiltros, urlBusca } from "@/lib/filtros";
+import { cn } from "@/lib/cn";
 import { faixaPreco, listaNatural } from "@/lib/formato";
 import { getVeterinario, type Veterinario } from "@/lib/veterinarios";
 
@@ -75,6 +78,7 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
   if (!vet) notFound();
 
   const filtros = parseFiltros(sp, catalogos);
+  const aba = sp.aba === "publicacoes" ? "publicacoes" : "perfil";
   const filtrosLog = filtrosParaLog(filtros);
   const evento = (canal: EventoContato["canal"]): EventoContato => ({
     veterinarian_id: vet.id,
@@ -149,11 +153,18 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
               )}
             </div>
           </header>
+
+          <Abas slug={vet.slug} aba={aba} />
         </div>
       </div>
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-6 sm:px-6 md:pb-8 lg:pb-16">
         <div className="mt-6 grid gap-6 md:mt-8 md:gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+          {aba === "publicacoes" ? (
+            <Suspense fallback={<EsqueletoListaPosts />}>
+              <Publicacoes vetId={vet.id} slug={vet.slug} nome={vet.nome} />
+            </Suspense>
+          ) : (
           <div className="space-y-6 md:space-y-8">
             {vet.bio && (
               <Secao slug={vet.slug} titulo="Sobre" icone={UserRound}>
@@ -201,6 +212,7 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
 
             {!vet.isDemo && <DenunciarPerfil vetId={vet.id} />}
           </div>
+          )}
   
           <Contato vet={vet} whatsapp={whatsapp} evento={evento} />
         </div>
@@ -222,6 +234,35 @@ async function Perfil({ params, searchParams }: { params: Params; searchParams: 
         </div>
       )}
     </>
+  );
+}
+
+// Abas do perfil, com a escolha na URL (?aba=publicacoes).
+function Abas({ slug, aba }: { slug: string; aba: "perfil" | "publicacoes" }) {
+  const itens = [
+    { valor: "perfil", nome: "Perfil", href: `/vet/${slug}` },
+    { valor: "publicacoes", nome: "Publicações", href: `/vet/${slug}?aba=publicacoes` },
+  ] as const;
+  return (
+    <nav aria-label="Seções do perfil" className="mt-6 -mb-6 md:-mb-8">
+      <ul className="flex gap-2">
+        {itens.map((i) => (
+          <li key={i.valor}>
+            <Link
+              href={i.href}
+              scroll={false}
+              aria-current={aba === i.valor ? "page" : undefined}
+              className={cn(
+                "inline-flex min-h-12 items-center border-b-2 px-4 text-body font-semibold",
+                aba === i.valor ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text",
+              )}
+            >
+              {i.nome}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 

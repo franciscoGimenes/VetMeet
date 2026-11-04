@@ -3,7 +3,8 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Rodape } from "@/components/Rodape";
-import { ButtonLink } from "@/components/ui";
+import { Search } from "lucide-react";
+import { ButtonLink, Icon } from "@/components/ui";
 import { SITE_DESCRICAO, SITE_NOME, SITE_URL } from "@/lib/site";
 import { CORES } from "@/lib/tokens";
 import "./globals.css";
@@ -55,12 +56,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="inline-flex min-h-11 shrink-0 items-center">
               <Logo compacto />
             </Link>
-            <nav className="flex items-center gap-2">
-              <ButtonLink href="/buscar" variant="ghost">
-                <span className="sm:hidden">Buscar</span>
+            <nav className="flex items-center gap-1 sm:gap-2">
+              {/* Abaixo de 420px só o ícone (com rótulo para leitor de tela): os três links cabem. */}
+              <ButtonLink href="/buscar" variant="ghost" className="px-3 sm:px-4">
+                <Icon icon={Search} className="min-[420px]:hidden" />
+                <span className="sr-only min-[420px]:not-sr-only sm:hidden">Buscar</span>
                 <span className="hidden sm:inline">Buscar veterinários</span>
               </ButtonLink>
-              <ButtonLink href="/sou-veterinario" variant="secondary">
+              <ButtonLink href="/rede" variant="ghost" className="px-3 sm:px-4">
+                Rede
+              </ButtonLink>
+              <ButtonLink href="/sou-veterinario" variant="secondary" className="px-3 sm:px-4">
                 Sou veterinário
               </ButtonLink>
             </nav>

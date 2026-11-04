@@ -1,4 +1,4 @@
-import { CircleCheck, CircleOff, CirclePause, ExternalLink } from "lucide-react";
+import { CircleCheck, CircleOff, CirclePause, ExternalLink, PenSquare } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { alternarPausa, sairDaConta } from "@/app/conta/actions";
@@ -74,6 +74,23 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
           )}
         </div>
       </Card>
+
+      <Secao titulo="Rede">
+        <p className="text-small text-text-muted">
+          Publique dicas, casos e bastidores. Fixe até 3 publicações para elas aparecerem primeiro no seu perfil.
+        </p>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <ButtonLink href="/rede/novo">
+            <Icon icon={PenSquare} />
+            Nova publicação
+          </ButtonLink>
+          {perfil.status === "ativo" && (
+            <ButtonLink href={`/vet/${perfil.slug}?aba=publicacoes`} variant="secondary">
+              Minhas publicações
+            </ButtonLink>
+          )}
+        </div>
+      </Secao>
 
       <Secao titulo="Aparecer na busca">
         <Visibilidade perfil={perfil} />

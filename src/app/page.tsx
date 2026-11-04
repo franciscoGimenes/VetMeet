@@ -4,10 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { BuscaRapida } from "@/components/BuscaRapida";
 import { Forma } from "@/components/decor/Forma";
+import { PreviaPost } from "@/components/rede/PreviaPost";
 import { ButtonLink, Card, chipClasses, Disclosure, Icon } from "@/components/ui";
 import { getCatalogos, type Regiao } from "@/lib/catalogos";
 import { cn } from "@/lib/cn";
 import { FILTROS_VAZIOS, urlBusca, type Filtros } from "@/lib/filtros";
+import { postsRecentes } from "@/lib/posts";
 import fotoHero from "../../public/images/home/exame-yorkshire.jpg";
 import fotoVeterinario from "../../public/images/home/ultrassom-spitz.jpg";
 import ilustracaoGato from "../../public/illustrations/undraw_cat_lqdj.svg";
@@ -116,7 +118,7 @@ const PERGUNTAS = [
 ];
 
 export default async function Inicio() {
-  const catalogos = await getCatalogos();
+  const [catalogos, recentes] = await Promise.all([getCatalogos(), postsRecentes(3)]);
   const alto = catalogos.regioes.filter((r) => r.regiao_macro === "alto_tiete");
   const leste = catalogos.regioes.filter((r) => r.regiao_macro === "zona_leste_sp");
 
@@ -222,7 +224,26 @@ export default async function Inicio() {
         </div>
       </Secao>
 
-      {/* 6. Faixa para veterinários: o único accent desta área é o botão */}
+      {/* 6. Rede: o que os veterinários estão publicando */}
+      {recentes.length > 0 && (
+        <Secao titulo="Na Rede dos veterinários" fundo="bg-surface">
+          <p className="-mt-2 mb-6 max-w-2xl text-body text-text-muted md:-mt-4">
+            Dicas para tutores, relatos de caso e bastidores, escritos por quem atende na sua região.
+          </p>
+          <ul className="grid gap-4 md:grid-cols-3 md:gap-6">
+            {recentes.map((p) => (
+              <li key={p.id}>
+                <PreviaPost post={p} />
+              </li>
+            ))}
+          </ul>
+          <ButtonLink href="/rede" variant="secondary" size="lg" className="mt-6 w-full sm:w-auto md:mt-8">
+            Ver a Rede
+          </ButtonLink>
+        </Secao>
+      )}
+
+      {/* 7. Faixa para veterinários: o único accent desta área é o botão */}
       <section className="tema-escuro bg-primary-dark bg-patinhas-claras">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1fr_18rem] md:items-center md:py-16 lg:grid-cols-[1fr_22rem]">
           <div>
@@ -258,7 +279,7 @@ export default async function Inicio() {
         </div>
       </section>
 
-      {/* 7. Perguntas frequentes */}
+      {/* 8. Perguntas frequentes */}
       <Secao titulo="Perguntas frequentes" estreita fundo="bg-caramel-100">
         <Card padding="none" className="px-4 py-1 sm:px-6">
           {PERGUNTAS.map((p) => (

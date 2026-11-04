@@ -4,6 +4,8 @@ import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCatalogos } from "@/lib/catalogos";
 import { BUCKET_FOTOS, etapaDaConta, exigirSessao, getMeuPerfil } from "@/lib/conta";
+import { TAG_REDE } from "@/lib/posts";
+import { BUCKET_REDE } from "@/lib/rede";
 import { lerFormularioPerfil, validarPerfil, type DadosPerfil, type ErrosPerfil } from "@/lib/perfil";
 import { SENHA_MIN } from "@/lib/senha";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -61,6 +63,7 @@ export async function salvarPerfil(_anterior: EstadoPerfil, form: FormData): Pro
   }
 
   updateTag(TAG_VETERINARIOS);
+  updateTag(TAG_REDE);
   redirect(novo ? "/conta?publicado=1" : "/conta?salvo=1");
 }
 
@@ -74,6 +77,7 @@ export async function alternarPausa() {
     .eq("id", perfil.id);
   if (error) console.error("pausar:", error.message);
   updateTag(TAG_VETERINARIOS);
+  updateTag(TAG_REDE);
   redirect("/conta");
 }
 
@@ -96,6 +100,7 @@ export async function salvarFoto(caminho: string | null) {
   if (antigos.length) await supabase.storage.from(BUCKET_FOTOS).remove(antigos);
 
   updateTag(TAG_VETERINARIOS);
+  updateTag(TAG_REDE);
   return { ok: true };
 }
 
@@ -125,12 +130,17 @@ export async function excluirConta(_anterior: EstadoExclusao, form: FormData): P
   const { supabase, user } = await exigirSessao();
   const admin = createAdminClient();
 
-  // Foto, pré-cadastro com o mesmo e-mail e a conta. A conta leva junto, em
-  // cascata, o perfil, os locais, os vínculos e os aceites; os registros de
-  // contato e de denúncia ficam sem o nome (trigger veterinarians_anonimiza).
-  const { data: arquivos } = await admin.storage.from(BUCKET_FOTOS).list(user.id);
-  if (arquivos?.length) {
-    await admin.storage.from(BUCKET_FOTOS).remove(arquivos.map((a) => `${user.id}/${a.name}`));
+  // Fotos (perfil e Rede), pré-cadastro com o mesmo e-mail e a conta. A conta
+  // leva junto, em cascata, o perfil, os locais, os vínculos, os aceites e a
+  // Rede (posts, curtidas e comentários); os registros de contato e de denúncia
+  // ficam sem o nome (trigger veterinarians_anonimiza).
+  for (const bucket of [BUCKET_FOTOS, BUCKET_REDE]) {
+    // list() devolve até 100 por vez: repete até esvaziar a pasta.
+    for (let i = 0; i < 20; i++) {
+      const { data: arquivos } = await admin.storage.from(bucket).list(user.id, { limit: 100 });
+      if (!arquivos?.length) break;
+      await admin.storage.from(bucket).remove(arquivos.map((a) => `${user.id}/${a.name}`));
+    }
   }
   if (user.email) await admin.from("vet_waitlist").delete().eq("email", user.email.toLowerCase());
   const { error } = await admin.auth.admin.deleteUser(user.id);
@@ -142,6 +152,7 @@ export async function excluirConta(_anterior: EstadoExclusao, form: FormData): P
   // A sessão já não vale no servidor; só limpa os cookies.
   await supabase.auth.signOut({ scope: "local" });
   updateTag(TAG_VETERINARIOS);
+  updateTag(TAG_REDE);
   redirect("/entrar?conta=excluida");
 }
 
