@@ -17,6 +17,7 @@ import { Aceite, Alerta } from "@/components/conta/FormsAuth";
 import { Button, Field, Icon, Input } from "@/components/ui";
 import { SENHA_MIN } from "@/lib/senha";
 import { createClient } from "@/lib/supabase/client";
+import { prepararImagem, TAMANHO_ORIGINAL_MAX } from "@/lib/imagem";
 import { DECLARACAO_CRMV } from "@/lib/termos";
 
 const linkTexto = "font-medium text-primary underline underline-offset-4";
@@ -47,27 +48,6 @@ export function FormAceite() {
   );
 }
 
-// Recorta no centro, reduz para 640px e reencoda: a foto sai leve e sem os
-// metadados do arquivo original (EXIF, inclusive localização).
-async function prepararFoto(arquivo: File) {
-  const bitmap = await createImageBitmap(arquivo, { imageOrientation: "from-image" });
-  const lado = Math.min(bitmap.width, bitmap.height);
-  const alvo = Math.min(640, lado);
-  const canvas = document.createElement("canvas");
-  canvas.width = alvo;
-  canvas.height = alvo;
-  canvas
-    .getContext("2d")!
-    .drawImage(bitmap, (bitmap.width - lado) / 2, (bitmap.height - lado) / 2, lado, lado, 0, 0, alvo, alvo);
-  bitmap.close();
-  const gerar = (tipo: string) => new Promise<Blob | null>((ok) => canvas.toBlob(ok, tipo, 0.85));
-  // Safari não gera WebP no canvas (devolve PNG): nesse caso vai JPEG.
-  const webp = await gerar("image/webp");
-  const blob = webp?.type === "image/webp" ? webp : await gerar("image/jpeg");
-  if (!blob) throw new Error("não foi possível processar a imagem");
-  return blob;
-}
-
 export function FotoPerfil({ nome, fotoUrl, userId }: { nome: string; fotoUrl: string | null; userId: string }) {
   const [url, setUrl] = useState(fotoUrl);
   const [enviando, setEnviando] = useState(false);
@@ -78,11 +58,11 @@ export function FotoPerfil({ nome, fotoUrl, userId }: { nome: string; fotoUrl: s
   async function enviar(arquivo: File) {
     setErro(null);
     if (!arquivo.type.startsWith("image/")) return setErro("Escolha uma imagem (JPG, PNG ou WebP).");
-    if (arquivo.size > 20 * 1024 * 1024) return setErro("A imagem passa de 20 MB. Escolha uma menor.");
+    if (arquivo.size > TAMANHO_ORIGINAL_MAX) return setErro("A imagem passa de 20 MB. Escolha uma menor.");
     setEnviando(true);
     try {
-      const blob = await prepararFoto(arquivo);
-      const extensao = blob.type === "image/webp" ? "webp" : "jpg";
+      // Recorte quadrado de 640px, reencodado: sai leve e sem EXIF (inclusive localização).
+      const { blob, extensao } = await prepararImagem(arquivo, { lado: 640, quadrada: true, qualidade: 0.85 });
       const caminho = `${userId}/${Date.now()}.${extensao}`;
       const { error } = await createClient()
         .storage.from("fotos-veterinarios")
