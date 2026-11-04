@@ -1,6 +1,9 @@
 -- VetMeet: remove todos os perfis de demonstração e seus vínculos.
 --
--- clinics e tabelas de junção caem por on delete cascade.
+-- clinics e tabelas de junção caem por on delete cascade, assim como a Rede:
+-- posts demo (com fotos, marcações, curtidas e comentários) e as curtidas e
+-- comentários que perfis demo deixaram em posts reais. Os contadores dos posts
+-- reais são corrigidos pelos triggers. Posts demo não têm fotos no Storage.
 -- contact_events são PRESERVADOS: veterinarian_id vira null e os snapshots
 -- vet_slug / vet_is_demo continuam identificando o perfil de origem.
 --
@@ -11,6 +14,7 @@ begin;
 create temp table _antes on commit drop as
 select
   (select count(*) from public.veterinarians where is_demo) as vets_demo,
+  (select count(*) from public.posts where is_demo) as posts_demo,
   (select count(*) from public.contact_events) as eventos_total,
   (select count(*) from public.contact_events where vet_is_demo) as eventos_demo;
 
@@ -37,7 +41,17 @@ begin
     + (select count(*) from public.veterinarian_payment_methods x where not exists (select 1 from public.veterinarians v where v.id = x.veterinarian_id))
     + (select count(*) from public.veterinarian_attendance_modes x where not exists (select 1 from public.veterinarians v where v.id = x.veterinarian_id))
     + (select count(*) from public.veterinarian_coverage_regions x where not exists (select 1 from public.veterinarians v where v.id = x.veterinarian_id))
+    + (select count(*) from public.posts x where not exists (select 1 from public.veterinarians v where v.id = x.veterinarian_id))
+    + (select count(*) from public.post_images x where not exists (select 1 from public.posts p where p.id = x.post_id))
+    + (select count(*) from public.post_species x where not exists (select 1 from public.posts p where p.id = x.post_id))
+    + (select count(*) from public.post_services x where not exists (select 1 from public.posts p where p.id = x.post_id))
+    + (select count(*) from public.post_likes x where not exists (select 1 from public.veterinarians v where v.id = x.veterinarian_id))
+    + (select count(*) from public.post_comments x where not exists (select 1 from public.veterinarians v where v.id = x.veterinarian_id))
     into orfaos;
+
+  if exists (select 1 from public.posts where is_demo) then
+    raise exception 'ainda existem posts demo';
+  end if;
 
   if orfaos > 0 then
     raise exception '% vínculos órfãos após remoção', orfaos;
@@ -51,8 +65,8 @@ begin
       a.eventos_total, eventos_depois, a.eventos_demo, eventos_demo_depois;
   end if;
 
-  raise notice 'removidos % perfis demo; % contact_events preservados (% de perfis demo)',
-    a.vets_demo, eventos_depois, eventos_demo_depois;
+  raise notice 'removidos % perfis demo e % posts demo; % contact_events preservados (% de perfis demo)',
+    a.vets_demo, a.posts_demo, eventos_depois, eventos_demo_depois;
 end $$;
 
 commit;
