@@ -295,6 +295,7 @@ Use RLS no Supabase:
 - Todos os links de e-mail e o LinkedIn voltam para `/auth/callback?next=...` (`urlCallback` em `src/lib/auth.ts`); o Supabase só aceita destinos listados em Authentication > URL Configuration > Redirect URLs.
 - Aceite: no cadastro por e-mail é gravado pelo servidor; quem entra pelo LinkedIn (ou aceitou versão antiga) passa por `/conta/aceite`.
 - Convite da lista de espera: e-mail próprio pela API do Resend (`RESEND_API_KEY`, `EMAIL_REMETENTE`), com link para `/sou-veterinario`.
+- **Resend adiado** (sem domínio próprio ainda): fica para uma próxima versão. Sem `RESEND_API_KEY` na Vercel, o botão de convite avisa "Envio de e-mail não configurado". Os e-mails de autenticação saem pelo SMTP padrão do Supabase, que só entrega para membros da equipe do projeto e tem limite baixo por hora: nos testes, cadastro por e-mail só funciona para esses endereços; os demais entram pelo LinkedIn.
 - `src/proxy.ts` (o antigo middleware, renomeado no Next 16) renova a sessão em `/admin`, `/auth`, `/conta`, `/entrar` e `/sou-veterinario` e manda quem não está logado de `/conta` para `/entrar`.
 - Páginas logadas chamam `exigirSessao()` (faz `await connection()`: o client do Supabase lê o relógio). Server Actions que levam a outra etapa redirecionam direto para ela (`etapaDaConta`), não para `/conta`: o navegador reaproveitaria a renderização anterior.
 
