@@ -1,15 +1,15 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, ImagePlus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CircleAlert, ImagePlus, X } from "lucide-react";
 import { useActionState, useId, useRef, useState } from "react";
 import { salvarPost, type EstadoPost } from "@/app/rede/actions";
-import { Alerta } from "@/components/conta/FormsAuth";
-import { Button, Chip, CONTROLE, Icon } from "@/components/ui";
+import { Alerta, Button, Chip, CONTROLE, ErroCampo, Icon } from "@/components/ui";
 import type { Catalogos } from "@/lib/catalogos";
 import { cn } from "@/lib/cn";
 import { prepararImagem, TAMANHO_ORIGINAL_MAX } from "@/lib/imagem";
 import { BUCKET_REDE, CATEGORIAS, FOTOS_MAX, TEXTO_MAX, validarPost, type ErrosPost, type FotoPost } from "@/lib/rede";
 import { createClient } from "@/lib/supabase/client";
+import { irParaErro, useMostrarErro } from "@/lib/useMostrarErro";
 
 // Lado maior das fotos da Rede depois do envio.
 const LADO_FOTO = 1600;
@@ -43,6 +43,9 @@ export function FormPost({
   const inputFoto = useRef<HTMLInputElement>(null);
   const id = useId();
   const erros = { ...estado.erros, ...errosLocais };
+  const formRef = useRef<HTMLFormElement>(null);
+  useMostrarErro(estado, formRef);
+  const resumoErro = estado.erro ?? Object.values(erros).find(Boolean) ?? null;
 
   async function adicionar(arquivos: FileList | null) {
     if (!arquivos?.length) return;
@@ -92,6 +95,7 @@ export function FormPost({
 
   return (
     <form
+      ref={formRef}
       action={acao}
       noValidate
       onSubmit={(e) => {
@@ -105,6 +109,7 @@ export function FormPost({
         });
         setErrosLocais(local);
         if (Object.keys(local).length || enviando) e.preventDefault();
+        if (Object.keys(local).length) requestAnimationFrame(() => irParaErro(formRef.current));
       }}
       className="space-y-6 md:space-y-8"
     >
@@ -122,9 +127,7 @@ export function FormPost({
           ))}
         </div>
         {erros.categoria && (
-          <p id={`${id}-cat-erro`} className="mt-2 text-small text-error-strong">
-            {erros.categoria}
-          </p>
+          <ErroCampo id={`${id}-cat-erro`} className="mt-2">{erros.categoria}</ErroCampo>
         )}
       </fieldset>
 
@@ -144,7 +147,11 @@ export function FormPost({
           className={cn(CONTROLE, "py-2")}
         />
         <div id={`${id}-texto-info`} className="mt-1.5 flex justify-between gap-2 text-small">
-          <span className="text-error-strong">{erros.texto}</span>
+          {erros.texto ? (
+            <ErroCampo className="mt-0">{erros.texto}</ErroCampo>
+          ) : (
+            <span />
+          )}
           <span className="shrink-0 text-text-muted">
             {texto.length.toLocaleString("pt-BR")}/{TEXTO_MAX.toLocaleString("pt-BR")}
           </span>
@@ -213,7 +220,7 @@ export function FormPost({
             </label>
           </div>
         )}
-        {(erroFoto || erros.fotos) && <p className="mt-2 text-small text-error-strong">{erroFoto ?? erros.fotos}</p>}
+        {(erroFoto || erros.fotos) && <ErroCampo className="mt-2">{erroFoto ?? erros.fotos}</ErroCampo>}
       </section>
 
       <fieldset>
@@ -243,6 +250,14 @@ export function FormPost({
       </fieldset>
 
       <div className="sticky bottom-0 z-30 -mx-4 border-t border-border bg-surface/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+        {resumoErro && !salvando && (
+          <p className="mb-3 flex gap-1.5 text-small text-error-strong">
+            <Icon icon={CircleAlert} size="sm" className="mt-0.5" />
+            <span className="min-w-0">
+              <span className="font-semibold">{post ? "Alterações não salvas." : "Não publicado."}</span> {resumoErro}
+            </span>
+          </p>
+        )}
         <Button type="submit" size="lg" block disabled={salvando || enviando > 0} className="sm:w-auto">
           {enviando > 0 ? "Enviando fotos..." : salvando ? "Salvando..." : post ? "Salvar alterações" : "Publicar"}
         </Button>

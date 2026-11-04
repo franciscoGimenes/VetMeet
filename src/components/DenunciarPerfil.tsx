@@ -4,7 +4,8 @@ import { Flag } from "lucide-react";
 import { useActionState, useId, useRef, useState } from "react";
 import { enviarDenuncia, type EstadoDenuncia } from "@/app/vet/[slug]/actions";
 import { Alerta } from "@/components/conta/FormsAuth";
-import { Button, Field, Icon, OptionRow } from "@/components/ui";
+import { Button, ErroCampo, Field, Icon, OptionRow } from "@/components/ui";
+import { useMostrarErro } from "@/lib/useMostrarErro";
 import { CAMPO_HONEYPOT, DESCRICAO_DENUNCIA_MAX, MOTIVOS_DENUNCIA } from "@/lib/denuncia";
 
 // Botão discreto no fim do perfil; abre o formulário ali mesmo. Sem login.
@@ -13,6 +14,7 @@ export function DenunciarPerfil({ vetId }: { vetId: string }) {
   const [estado, acao, enviando] = useActionState<EstadoDenuncia, FormData>(enviarDenuncia, {});
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  useMostrarErro(estado, formRef);
 
   if (estado.enviado) {
     return (
@@ -53,9 +55,7 @@ export function DenunciarPerfil({ vetId }: { vetId: string }) {
           ))}
         </div>
         {estado.erroMotivo && (
-          <p id={`${id}-motivo-erro`} className="mt-1.5 text-small text-error-strong">
-            {estado.erroMotivo}
-          </p>
+          <ErroCampo id={`${id}-motivo-erro`}>{estado.erroMotivo}</ErroCampo>
         )}
       </fieldset>
       <Field

@@ -1,3 +1,4 @@
+export { Alerta, ErroCampo } from "./Alerta";
 export { Badge, badgeClasses, type BadgeVariant } from "./Badge";
 export { Button, ButtonLink, buttonClasses, type ButtonSize, type ButtonVariant } from "./Button";
 export { Card, cardClasses } from "./Card";

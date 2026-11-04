@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "whatsapp" | "danger";
+export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "whatsapp" | "danger" | "dangerGhost";
 export type ButtonSize = "md" | "lg";
 
 const VARIANTES: Record<ButtonVariant, string> = {
@@ -14,6 +14,8 @@ const VARIANTES: Record<ButtonVariant, string> = {
   whatsapp: "bg-whatsapp text-white hover:bg-whatsapp-hover",
   // Ação destrutiva (excluir conta): contorno e texto em error-strong, nunca fundo vermelho.
   danger: "border border-error-strong bg-surface text-error-strong hover:bg-error/10",
+  // Entrada discreta de uma ação destrutiva (abre a confirmação), em listas e menus.
+  dangerGhost: "text-error-strong hover:bg-error/10",
 };
 
 // md: 44px de altura (alvo mínimo de toque) · lg: 52px.

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { carregarMais } from "@/app/rede/actions";
 import { CardPost } from "@/components/rede/CardPost";
-import { Button } from "@/components/ui";
+import { Button, ErroCampo } from "@/components/ui";
 import type { FiltrosRede, PostResumo } from "@/lib/rede";
 
 // Lista cronológica com "Carregar mais" (cursor). A página do servidor monta
@@ -70,9 +70,7 @@ export function FeedRede({
             {pendente ? "Carregando..." : "Carregar mais"}
           </Button>
           {erro && (
-            <p role="alert" className="text-small text-error-strong">
-              Não foi possível carregar agora. Tente de novo.
-            </p>
+            <ErroCampo className="mt-0">Não foi possível carregar agora. Tente de novo.</ErroCampo>
           )}
         </div>
       )}

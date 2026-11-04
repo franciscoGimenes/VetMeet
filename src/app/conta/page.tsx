@@ -3,12 +3,15 @@ import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { alternarPausa, sairDaConta } from "@/app/conta/actions";
 import { ExcluirConta, FotoPerfil } from "@/components/conta/Conta";
-import { Alerta } from "@/components/conta/FormsAuth";
 import { EsqueletoConta } from "@/components/Esqueletos";
-import { Badge, Button, ButtonLink, Card, Icon } from "@/components/ui";
+import { Alerta, Badge, Button, ButtonLink, Card, Icon } from "@/components/ui";
 import { etapaDaConta, exigirSessao } from "@/lib/conta";
 import { CONTATO_EMAIL } from "@/lib/site";
 import type { Veterinario } from "@/lib/veterinarios";
+
+const ERROS: Record<string, string> = {
+  pausa: "Não foi possível mudar a visibilidade do perfil agora. Tente de novo em alguns minutos.",
+};
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -34,6 +37,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
 
   const sp = await searchParams;
   const aviso = Object.keys(AVISOS).find((k) => sp[k] === "1");
+  const erro = typeof sp.erro === "string" && Object.hasOwn(ERROS, sp.erro) ? ERROS[sp.erro] : undefined;
 
   return (
     <>
@@ -49,6 +53,11 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
         </form>
       </div>
 
+      {erro && (
+        <div className="mt-6">
+          <Alerta>{erro}</Alerta>
+        </div>
+      )}
       {aviso && (
         <div className="mt-6">
           <Alerta tom="ok">{AVISOS[aviso]}</Alerta>

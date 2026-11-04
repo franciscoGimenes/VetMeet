@@ -7,7 +7,8 @@ import { useActionState, useEffect, useId, useRef, useState, useTransition } fro
 import { apagarComentario, comentar, type EstadoComentario } from "@/app/rede/actions";
 import { Avatar } from "@/components/Avatar";
 import { useRede } from "@/components/rede/RedeContexto";
-import { Button, Card, CONTROLE, Icon } from "@/components/ui";
+import { avisarErro } from "@/components/Avisos";
+import { Button, Card, CONTROLE, ErroCampo, Icon } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { COMENTARIO_MAX, dataPost, type Comentario } from "@/lib/rede";
 
@@ -52,12 +53,11 @@ export function Comentarios({
 function ItemComentario({ comentario: c, podeApagar }: { comentario: Comentario; podeApagar: boolean }) {
   const router = useRouter();
   const [pendente, startTransition] = useTransition();
-  const [erro, setErro] = useState(false);
 
   function apagar() {
     startTransition(async () => {
       const r = await apagarComentario(c.id);
-      if ("erro" in r) setErro(true);
+      if ("erro" in r) avisarErro("Não foi possível apagar o comentário. Tente de novo.");
       else router.refresh();
     });
   }
@@ -77,7 +77,6 @@ function ItemComentario({ comentario: c, podeApagar }: { comentario: Comentario;
           </span>
         </p>
         <p className="mt-1 text-body whitespace-pre-line text-text">{c.texto}</p>
-        {erro && <p className="mt-1 text-small text-error-strong">Não foi possível apagar agora.</p>}
       </div>
       {podeApagar && (
         <Button variant="ghost" iconOnly onClick={apagar} disabled={pendente} aria-label="Apagar comentário" className="-mt-2 shrink-0 text-text-muted">
@@ -137,7 +136,7 @@ function FormComentario({ postId }: { postId: string }) {
       />
       <div id={`${id}-info`} className="flex items-center justify-between gap-2">
         {estado.erro ? (
-          <p className="text-small text-error-strong">{estado.erro}</p>
+          <ErroCampo className="mt-0">{estado.erro}</ErroCampo>
         ) : (
           <p className="text-caption text-text-muted">
             {texto.length}/{COMENTARIO_MAX}

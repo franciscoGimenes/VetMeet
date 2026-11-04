@@ -3,9 +3,10 @@
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCatalogos } from "@/lib/catalogos";
+import { excluirUsuario } from "@/lib/exclusao";
 import { BUCKET_FOTOS, etapaDaConta, exigirSessao, getMeuPerfil } from "@/lib/conta";
 import { TAG_REDE } from "@/lib/posts";
-import { BUCKET_REDE } from "@/lib/rede";
+import { CONTATO_EMAIL } from "@/lib/site";
 import { lerFormularioPerfil, validarPerfil, type DadosPerfil, type ErrosPerfil } from "@/lib/perfil";
 import { SENHA_MIN } from "@/lib/senha";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -54,7 +55,11 @@ export async function salvarPerfil(_anterior: EstadoPerfil, form: FormData): Pro
     // CRMV único entre perfis reais
     if (error.code === "23505" && error.message.includes("crmv")) {
       return {
-        erros: { crmv_numero: "Já existe um perfil com este CRMV. Se é seu, fale com a gente pelo e-mail de contato." },
+        erros: {
+          crmv_numero: `Este CRMV já está em outro perfil do VetMeet. Confira o número e a UF${
+            CONTATO_EMAIL ? `; se o CRMV é seu, escreva para ${CONTATO_EMAIL}` : ""
+          }.`,
+        },
         valores: dados,
       };
     }
@@ -75,7 +80,10 @@ export async function alternarPausa() {
     .from("veterinarians")
     .update({ status: perfil.status === "ativo" ? "pausado" : "ativo" })
     .eq("id", perfil.id);
-  if (error) console.error("pausar:", error.message);
+  if (error) {
+    console.error("pausar:", error.message);
+    redirect("/conta?erro=pausa");
+  }
   updateTag(TAG_VETERINARIOS);
   updateTag(TAG_REDE);
   redirect("/conta");
@@ -130,20 +138,9 @@ export async function excluirConta(_anterior: EstadoExclusao, form: FormData): P
   const { supabase, user } = await exigirSessao();
   const admin = createAdminClient();
 
-  // Fotos (perfil e Rede), pré-cadastro com o mesmo e-mail e a conta. A conta
-  // leva junto, em cascata, o perfil, os locais, os vínculos, os aceites e a
-  // Rede (posts, curtidas e comentários); os registros de contato e de denúncia
-  // ficam sem o nome (trigger veterinarians_anonimiza).
-  for (const bucket of [BUCKET_FOTOS, BUCKET_REDE]) {
-    // list() devolve até 100 por vez: repete até esvaziar a pasta.
-    for (let i = 0; i < 20; i++) {
-      const { data: arquivos } = await admin.storage.from(bucket).list(user.id, { limit: 100 });
-      if (!arquivos?.length) break;
-      await admin.storage.from(bucket).remove(arquivos.map((a) => `${user.id}/${a.name}`));
-    }
-  }
+  // Pré-cadastro com o mesmo e-mail, arquivos e a conta (com tudo em cascata).
   if (user.email) await admin.from("vet_waitlist").delete().eq("email", user.email.toLowerCase());
-  const { error } = await admin.auth.admin.deleteUser(user.id);
+  const { error } = await excluirUsuario(admin, user.id);
   if (error) {
     console.error("excluir conta:", error.message);
     return { erro: "Não foi possível excluir agora. Tente novamente ou fale com a gente pelo e-mail de contato." };

@@ -1,10 +1,9 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { CircleAlert, Plus, Trash2 } from "lucide-react";
 import { useActionState, useId, useRef, useState, type ReactNode } from "react";
 import { salvarPerfil, type EstadoPerfil } from "@/app/conta/actions";
-import { Alerta } from "@/components/conta/FormsAuth";
-import { Button, Card, Chip, Field, Icon, Input, Select, fieldProps } from "@/components/ui";
+import { Alerta, Button, Card, Chip, ErroCampo, Field, Icon, Input, Select, fieldProps } from "@/components/ui";
 import type { Catalogos } from "@/lib/catalogos";
 import { UFS } from "@/lib/crmv";
 import {
@@ -17,6 +16,7 @@ import {
   type ErrosPerfil,
   type LocalForm,
 } from "@/lib/perfil";
+import { useMostrarErro } from "@/lib/useMostrarErro";
 import { mascararWhatsApp } from "@/lib/whatsapp";
 
 type LocalComChave = LocalForm & { chave: number };
@@ -37,7 +37,10 @@ export function FormPerfil({
   const id = useId();
 
   const v = estado.valores ?? inicial;
-  const erros = errosCliente ?? estado.erros ?? {};
+  // A validação do navegador só vale quando achou algo: vazia, ela escondia os
+  // erros que só o servidor conhece (ex.: CRMV já usado em outro perfil).
+  const erros = (errosCliente && Object.keys(errosCliente).length ? errosCliente : estado.erros) ?? {};
+  useMostrarErro(estado, formRef);
 
   // O que muda a forma do formulário (campos que aparecem ou somem).
   const [sel, setSel] = useState(() => ({
@@ -75,6 +78,7 @@ export function FormPerfil({
     setLocais((ls) => ls.map((l) => (l.chave === chave ? { ...l, ...mudanca } : l)));
 
   const temErro = Object.keys(erros).length > 0;
+  const resumoErro = estado.erro ?? (temErro ? Object.values(erros)[0] : null);
   const alto = catalogos.regioes.filter((r) => r.regiao_macro === "alto_tiete");
   const leste = catalogos.regioes.filter((r) => r.regiao_macro === "zona_leste_sp");
   const areasEscolhidas = catalogos.areas.filter((a) => sel.areas.includes(a.slug));
@@ -253,7 +257,7 @@ export function FormPerfil({
               </fieldset>
             );
           })}
-          {erros.locais && <p className="text-small text-error-strong">{erros.locais}</p>}
+          {erros.locais && <ErroCampo className="mt-0">{erros.locais}</ErroCampo>}
           {locais.length < 10 && (
             <Button
               variant="secondary"
@@ -321,9 +325,7 @@ export function FormPerfil({
             dataCampo="consulta"
           />
           {erros.consulta && (
-            <p id={`${id}-consulta-erro`} className="mt-1.5 text-small text-error-strong">
-              {erros.consulta}
-            </p>
+            <ErroCampo id={`${id}-consulta-erro`}>{erros.consulta}</ErroCampo>
           )}
         </fieldset>
         <Opcoes legenda="Serviços que oferece (opcional)" campo="servicos" itens={catalogos.servicos} marcados={v.servicos} />
@@ -342,7 +344,7 @@ export function FormPerfil({
               />
             </fieldset>
           ))}
-          {erros.servicos && <p className="text-small text-error-strong">{erros.servicos}</p>}
+          {erros.servicos && <ErroCampo className="mt-0">{erros.servicos}</ErroCampo>}
         </div>
       </Bloco>
 
@@ -393,11 +395,24 @@ export function FormPerfil({
       </Bloco>
 
       <div className="sticky bottom-0 z-30 -mx-4 border-t border-border bg-surface/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        {resumoErro && !enviando && <ResumoErro novo={novo}>{resumoErro}</ResumoErro>}
         <Button type="submit" size="lg" block disabled={enviando}>
           {enviando ? "Salvando..." : novo ? "Publicar perfil" : "Salvar alterações"}
         </Button>
       </div>
     </form>
+  );
+}
+
+// Repete o problema junto ao botão: no celular a barra fixa fica longe do campo.
+function ResumoErro({ novo, children }: { novo: boolean; children: ReactNode }) {
+  return (
+    <p className="mb-3 flex gap-1.5 text-small text-error-strong">
+      <Icon icon={CircleAlert} size="sm" className="mt-0.5" />
+      <span className="min-w-0">
+        <span className="font-semibold">{novo ? "Perfil não publicado." : "Alterações não salvas."}</span> {children}
+      </span>
+    </p>
   );
 }
 
@@ -495,9 +510,7 @@ function Opcoes({
         ))}
       </div>
       {erro && (
-        <p id={erroId} className="mt-1.5 text-small text-error-strong">
-          {erro}
-        </p>
+        <ErroCampo id={erroId}>{erro}</ErroCampo>
       )}
     </fieldset>
   );

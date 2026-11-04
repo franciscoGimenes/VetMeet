@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
+import { Avisos } from "@/components/Avisos";
 import { Logo } from "@/components/Logo";
 import { Rodape } from "@/components/Rodape";
 import { Search } from "lucide-react";
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="flex-1">{children}</main>
         <Rodape />
+        <Avisos />
       </body>
     </html>
   );

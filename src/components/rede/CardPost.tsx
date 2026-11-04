@@ -9,7 +9,8 @@ import { Avatar } from "@/components/Avatar";
 import { useRede } from "@/components/rede/RedeContexto";
 import { Galeria } from "@/components/rede/Galeria";
 import { SeloDemo } from "@/components/SeloDemo";
-import { Badge, Button, ButtonLink, Card, Icon } from "@/components/ui";
+import { avisarErro } from "@/components/Avisos";
+import { Alerta, Badge, Button, ButtonLink, Card, Icon } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { dataPost, nomeCategoria, type PostResumo } from "@/lib/rede";
 
@@ -168,7 +169,10 @@ function Curtir({ postId, curtidas, curtido, meu }: { postId: string; curtidas: 
     setEstado((e) => ({ curtido: novo, curtidas: Math.max(0, e.curtidas + (novo ? 1 : -1)) }));
     startTransition(async () => {
       const r = await curtir(postId, novo);
-      if ("erro" in r) setEstado({ curtido: !novo, curtidas: estado.curtidas });
+      if ("erro" in r) {
+        setEstado({ curtido: !novo, curtidas: estado.curtidas });
+        avisarErro(r.erro);
+      }
       else setEstado({ curtido: novo, curtidas: r.curtidas });
     });
   }
@@ -277,15 +281,15 @@ function MenuAutor({ post, completo, aoExcluir }: { post: PostResumo; completo: 
                 <Icon icon={post.fixado ? PinOff : Pin} />
                 {post.fixado ? "Desafixar do perfil" : "Fixar no perfil"}
               </Button>
-              <Button variant="ghost" block onClick={() => setConfirmar(true)} className="justify-start text-error-strong">
+              <Button variant="dangerGhost" block onClick={() => setConfirmar(true)} className="justify-start">
                 <Icon icon={Trash2} /> Excluir
               </Button>
             </>
           )}
           {erro && (
-            <p role="alert" className="p-2 text-small text-error-strong">
-              {erro}
-            </p>
+            <div className="p-2">
+              <Alerta>{erro}</Alerta>
+            </div>
           )}
         </div>
       )}

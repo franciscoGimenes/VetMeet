@@ -9,21 +9,12 @@ import {
   recuperarSenha,
   type EstadoAuth,
 } from "@/app/entrar/actions";
-import { Button, Field, Input, fieldProps } from "@/components/ui";
+import { Alerta, Button, ErroCampo, Field, Input, fieldProps } from "@/components/ui";
 import { SENHA_MIN } from "@/lib/senha";
 import { DECLARACAO_CRMV } from "@/lib/termos";
 
-export function Alerta({ tom = "erro", children }: { tom?: "erro" | "ok"; children: ReactNode }) {
-  return tom === "erro" ? (
-    <p role="alert" className="rounded-control bg-error/10 px-4 py-3 text-small text-error-strong ring-1 ring-error/30 ring-inset">
-      {children}
-    </p>
-  ) : (
-    <p role="status" className="rounded-control bg-primary-soft px-4 py-3 text-small text-text ring-1 ring-primary/20 ring-inset">
-      {children}
-    </p>
-  );
-}
+// Mantido aqui para os imports antigos; o componente fica em ui/Alerta.
+export { Alerta };
 
 // Checkbox com texto ao lado; a linha inteira é o alvo de toque.
 export function Aceite({
@@ -50,11 +41,7 @@ export function Aceite({
         />
         <span>{children}</span>
       </label>
-      {erro && (
-        <p id={`${id}-erro`} className="mt-1 text-small text-error-strong">
-          {erro}
-        </p>
-      )}
+      {erro && <ErroCampo id={`${id}-erro`}>{erro}</ErroCampo>}
     </div>
   );
 }

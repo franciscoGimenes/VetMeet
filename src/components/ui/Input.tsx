@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { ErroCampo } from "./Alerta";
 
 // Contorno em border-strong (3:1 sobre surface), texto body (16px: o iOS não dá zoom).
 export const CONTROLE =
@@ -30,11 +31,7 @@ export function Field({
           {hint}
         </p>
       )}
-      {error && (
-        <p id={`${id}-erro`} className="mt-1.5 text-small text-error-strong">
-          {error}
-        </p>
-      )}
+      {error && <ErroCampo id={`${id}-erro`}>{error}</ErroCampo>}
     </div>
   );
 }
