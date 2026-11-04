@@ -150,3 +150,81 @@ export function EsqueletoConta() {
     </Carregando>
   );
 }
+
+export function EsqueletoPost() {
+  return (
+    <div className={cn(cardClasses({ padding: "lg" }), "space-y-4")}>
+      <div className="flex gap-3">
+        <div className={cn(pulso, "size-11 shrink-0 rounded-pill")} />
+        <div className="flex-1 space-y-2 pt-1">
+          <div className={linha("w-1/2", "h-5")} />
+          <div className={linha("w-1/3", "h-3")} />
+          <div className={linha("w-40", "h-6")} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className={linha("w-full")} />
+        <div className={linha("w-11/12")} />
+        <div className={linha("w-3/4")} />
+      </div>
+      <div className="flex gap-4 border-t border-border pt-3">
+        <div className={linha("w-12", "h-6")} />
+        <div className={linha("w-12", "h-6")} />
+      </div>
+    </div>
+  );
+}
+
+// Lista de posts (aba Publicações do perfil e o feed, abaixo do cabeçalho).
+export function EsqueletoListaPosts() {
+  return (
+    <div className="space-y-4 md:space-y-6" aria-busy="true" role="status">
+      <span className="sr-only">Carregando publicações</span>
+      {[0, 1, 2].map((i) => (
+        <EsqueletoPost key={i} />
+      ))}
+    </div>
+  );
+}
+
+export function EsqueletoRede() {
+  return (
+    <Carregando rotulo="Carregando a Rede" className="pb-16">
+      <div className="bg-sage-100">
+        <div className="mx-auto max-w-6xl space-y-3 px-4 pt-6 pb-6 sm:px-6 lg:pt-10 lg:pb-8">
+          <div className={cn(pulsoSage, "h-9 w-32 rounded-pill")} />
+          <div className={cn(pulsoSage, "h-5 w-3/4 rounded-pill lg:w-96")} />
+          <div className={cn(pulsoSage, "h-11 w-36 rounded-control")} />
+        </div>
+      </div>
+      <div className="mx-auto mt-4 w-full max-w-6xl px-4 sm:px-6 lg:mt-8 lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8">
+        <div className={cn(pulso, "hidden h-96 rounded-card lg:block")} />
+        <div className="max-w-2xl space-y-4 md:space-y-6">
+          <div className="flex gap-2 overflow-hidden">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={cn(pulso, "h-11 w-28 shrink-0 rounded-pill")} />
+            ))}
+          </div>
+          {[0, 1, 2].map((i) => (
+            <EsqueletoPost key={i} />
+          ))}
+        </div>
+      </div>
+    </Carregando>
+  );
+}
+
+export function EsqueletoPaginaPost() {
+  return (
+    <Carregando rotulo="Carregando publicação" className="mx-auto w-full max-w-2xl px-4 pt-4 pb-16 sm:px-6 lg:pt-6">
+      <div className={cn(pulso, "h-11 w-32 rounded-control")} />
+      <div className="mt-4 space-y-6 md:space-y-8">
+        <EsqueletoPost />
+        <div className={cn(cardClasses({ padding: "lg" }), "space-y-3")}>
+          <div className={linha("w-40", "h-6")} />
+          <div className={cn(pulso, "h-24 rounded-control")} />
+        </div>
+      </div>
+    </Carregando>
+  );
+}

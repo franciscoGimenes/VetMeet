@@ -1,6 +1,8 @@
 import { iniciais } from "@/lib/formato";
 
 const TAMANHOS = {
+  xs: "size-9 text-caption font-semibold",
+  sm: "size-11 text-small font-semibold",
   md: "size-14 text-h3",
   lg: "size-20 text-h2 sm:size-24",
 };
