@@ -1,6 +1,8 @@
+import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
+import { Icon } from "./Icon";
 
 export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "whatsapp" | "danger" | "dangerGhost";
 export type ButtonSize = "md" | "lg";
@@ -31,12 +33,16 @@ export function buttonClasses({ variant = "primary", size = "md", block, iconOnl
   return cn(
     "inline-flex items-center justify-center gap-2 rounded-control font-semibold whitespace-nowrap transition-colors select-none",
     "disabled:pointer-events-none disabled:opacity-60",
+    // Carregando: mantém a cor cheia (o giro já diz que está ocupado).
+    "aria-busy:cursor-progress aria-busy:opacity-100",
     VARIANTES[variant],
     iconOnly ? (size === "lg" ? "size-13" : "size-11") : TAMANHOS[size],
     block && "w-full",
   );
 }
 
+// carregando: ação em andamento. Trava o botão e mostra o giro antes do texto.
+// Em formulários, prefira BotaoEnviar, que liga isso sozinho.
 export function Button({
   variant,
   size,
@@ -44,9 +50,23 @@ export function Button({
   iconOnly,
   className,
   type = "button",
+  carregando,
+  disabled,
+  children,
   ...props
-}: Estilo & ComponentProps<"button">) {
-  return <button type={type} className={cn(buttonClasses({ variant, size, block, iconOnly }), className)} {...props} />;
+}: Estilo & ComponentProps<"button"> & { carregando?: boolean }) {
+  return (
+    <button
+      type={type}
+      className={cn(buttonClasses({ variant, size, block, iconOnly }), className)}
+      disabled={disabled || carregando}
+      aria-busy={carregando || undefined}
+      {...props}
+    >
+      {carregando && <Icon icon={LoaderCircle} className="motion-safe:animate-spin" />}
+      {children}
+    </button>
+  );
 }
 
 export function ButtonLink({

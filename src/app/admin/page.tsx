@@ -1,9 +1,9 @@
-import { CircleCheck, CircleDashed, CircleOff, CirclePause } from "lucide-react";
+import { CircleAlert, CircleCheck, CircleDashed, CircleMinus, CircleOff, CirclePause } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { EsqueletoAdmin } from "@/components/Esqueletos";
-import { Badge, Button, Card, Icon, buttonClasses } from "@/components/ui";
+import { EsqueletoAdmin, EsqueletoResumoAdmin, EsqueletoSecaoAdmin } from "@/components/Esqueletos";
+import { Badge, BotaoEnviar, Card, Icon, buttonClasses } from "@/components/ui";
 import { getCatalogos, type Catalogos } from "@/lib/catalogos";
 import { formatarCrmv } from "@/lib/crmv";
 import { MOTIVOS_DENUNCIA } from "@/lib/denuncia";
@@ -12,9 +12,11 @@ import { createClient } from "@/lib/supabase/server";
 import { formatarTelefone } from "@/lib/whatsapp";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { alterarStatusPerfil, atualizarDenuncia, sair } from "./actions";
-import { ExcluirPerfil } from "./ExcluirPerfil";
 import { BotaoConvite } from "./BotaoConvite";
+import { ExcluirPerfil } from "./ExcluirPerfil";
+import { FormAcao } from "./FormAcao";
 import { GraficoCliques } from "./GraficoCliques";
+import { LinkPeriodo } from "./LinkPeriodo";
 
 type Painel = {
   inicio: string;
@@ -46,91 +48,97 @@ export default function PaginaAdmin({ searchParams }: { searchParams: SearchPara
   );
 }
 
+// Só confere o acesso e monta o cabeçalho; cada seção busca os próprios dados
+// em paralelo e aparece quando fica pronta (uma seção lenta não segura as outras).
 async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    { data: eAdmin },
+    { dias: diasParam },
+  ] = await Promise.all([supabase.auth.getUser(), supabase.rpc("is_admin"), searchParams]);
   if (!user) redirect("/admin/login");
-
-  const { dias: diasParam } = await searchParams;
   const dias = PERIODOS.find((p) => String(p) === diasParam) ?? 30;
 
-  const [painel, preCadastros, denuncias, catalogos] = await Promise.all([
-    supabase.rpc("painel_admin", { p_dias: dias }),
-    supabase.rpc("admin_lista_espera"),
-    supabase
-      .from("reports")
-      .select("id, vet_slug, motivo, descricao, status, created_at, veterinarians(nome_exibicao, slug)")
-      .order("status")
-      .order("created_at", { ascending: false })
-      .limit(100),
-    getCatalogos(),
-  ]);
-
-  if (painel.error) {
-    if (painel.error.code !== "42501") throw new Error(painel.error.message);
+  if (!eAdmin) {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
         <h1 className="text-h2 text-text">Sem acesso ao painel</h1>
         <p className="mt-2 text-small text-text-muted">{user.email} não está na lista de administradores.</p>
         <form action={sair} className="mt-6 md:mt-8">
-          <Button type="submit" variant="secondary">
+          <BotaoEnviar variant="secondary" textoCarregando="Saindo...">
             Sair
-          </Button>
+          </BotaoEnviar>
         </form>
       </div>
     );
   }
 
-  const p = painel.data as unknown as Painel;
-  const nomesVets = await nomesDosVeterinarios(supabase, p.veterinarios.map((v) => v.slug));
-  const nomeRegiao = (slug: string) => catalogos.regioes.find((r) => r.slug === slug)?.nome ?? slug;
-  const lista = preCadastros.data ?? [];
-  const listaDenuncias = denuncias.data ?? [];
-  const abertas = listaDenuncias.filter((d) => d.status === "aberta").length;
-  // Só chega aqui quem passou pelo is_admin() (painel_admin acima).
-  const perfis = await listarPerfis();
-
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-h1 text-text">Painel</h1>
-          <p className="text-small text-text-muted">{user.email}</p>
+          <p className="truncate text-small text-text-muted">{user.email}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <nav aria-label="Período" className="flex gap-2 rounded-control border border-border-strong bg-surface p-1">
             {PERIODOS.map((d) => (
-              <Link
-                key={d}
-                href={`/admin?dias=${d}`}
-                aria-current={d === dias ? "page" : undefined}
-                className="inline-flex min-h-11 items-center rounded-control px-3 text-small font-medium text-text hover:bg-background aria-[current=page]:bg-primary aria-[current=page]:text-white"
-              >
+              <LinkPeriodo key={d} href={`/admin?dias=${d}`} atual={d === dias}>
                 {d} dias
-              </Link>
+              </LinkPeriodo>
             ))}
           </nav>
           <form action={sair}>
-            <Button type="submit" variant="ghost">
+            <BotaoEnviar variant="ghost" textoCarregando="Saindo...">
               Sair
-            </Button>
+            </BotaoEnviar>
           </form>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3 md:mt-8">
-        <Numero
-          rotulo="Cliques de contato"
-          valor={p.totais.cliques}
-          detalhe={`${p.totais.cliques_demo} em perfis demo`}
-        />
-        <Numero
-          rotulo="Buscas"
-          valor={p.totais.buscas}
-          detalhe={`${p.totais.buscas_sem_resultado} sem resultado`}
-        />
+      {/* key: ao trocar o período, só esta parte volta ao esqueleto. */}
+      <Suspense key={dias} fallback={<EsqueletoResumoAdmin />}>
+        <Resumo dias={dias} />
+      </Suspense>
+      <Suspense fallback={<EsqueletoSecaoAdmin titulo="Perfis de veterinários" />}>
+        <SecaoPerfis />
+      </Suspense>
+      <Suspense fallback={<EsqueletoSecaoAdmin titulo="Denúncias" />}>
+        <SecaoDenuncias />
+      </Suspense>
+      <Suspense fallback={<EsqueletoSecaoAdmin titulo="Lista de espera" />}>
+        <SecaoListaEspera />
+      </Suspense>
+    </>
+  );
+}
+
+// As seções abaixo só são montadas depois do is_admin() em Conteudo; as que usam
+// a service role leem dados que o RLS esconderia (perfis fora do ar, e-mails).
+
+async function Resumo({ dias }: { dias: number }) {
+  const supabase = await createClient();
+  // Nomes em paralelo com os números (a tabela é pequena), com a service role
+  // para achar também os perfis pausados ou fora do ar.
+  const [painel, catalogos, vets] = await Promise.all([
+    supabase.rpc("painel_admin", { p_dias: dias }),
+    getCatalogos(),
+    createAdminClient().from("veterinarians").select("slug, nome_exibicao"),
+  ]);
+  if (painel.error) throw new Error(painel.error.message);
+
+  const p = painel.data as unknown as Painel;
+  const nomesVets = new Map((vets.data ?? []).map((v) => [v.slug, v.nome_exibicao]));
+  const nomeRegiao = (slug: string) => catalogos.regioes.find((r) => r.slug === slug)?.nome ?? slug;
+
+  return (
+    <>
+      <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4 md:mt-8">
+        <Numero rotulo="Cliques de contato" valor={p.totais.cliques} detalhe={`${p.totais.cliques_demo} em perfis demo`} />
+        <Numero rotulo="Buscas" valor={p.totais.buscas} detalhe={`${p.totais.buscas_sem_resultado} sem resultado`} />
         <Numero
           rotulo="Pré-cadastros"
           valor={p.totais.pre_cadastros}
@@ -139,7 +147,7 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
       </div>
 
       <Bloco titulo="Cliques de contato por dia" className="mt-6 md:mt-8">
-        <GraficoCliques dias={p.cliques_por_dia} />
+        {p.cliques_por_dia.length ? <GraficoCliques dias={p.cliques_por_dia} /> : <Vazio>Sem dados no período.</Vazio>}
       </Bloco>
 
       <div className="mt-6 grid gap-6 md:mt-8 md:gap-8 lg:grid-cols-2">
@@ -185,24 +193,33 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {p.veterinarios.map((v) => (
-                  <tr key={`${v.slug}-${v.demo}`}>
-                    <td className="py-2">
-                      <Link href={`/vet/${v.slug}`} className="inline-flex min-h-11 items-center font-medium text-text hover:underline">
-                        {nomesVets.get(v.slug) ?? v.slug}
-                      </Link>
-                      {v.demo && (
-                        <span className="ml-2">
-                          <Badge variant="demo">demo</Badge>
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 text-right font-semibold">{v.total}</td>
-                    <td className="py-2 text-right">{v.whatsapp}</td>
-                    <td className="py-2 text-right">{v.card}</td>
-                    <td className="py-2 text-right">{v.perfil}</td>
-                  </tr>
-                ))}
+                {p.veterinarios.map((v) => {
+                  const nome = nomesVets.get(v.slug);
+                  return (
+                    <tr key={`${v.slug}-${v.demo}`}>
+                      <td className="py-2">
+                        {nome ? (
+                          <Link href={`/vet/${v.slug}`} className="inline-flex min-h-11 items-center font-medium text-text hover:underline">
+                            {nome}
+                          </Link>
+                        ) : (
+                          <span className="inline-flex min-h-11 items-center text-text-muted">
+                            {v.slug === "perfil-excluido" ? "Perfis excluídos" : v.slug}
+                          </span>
+                        )}
+                        {v.demo && (
+                          <span className="ml-2">
+                            <Badge variant="demo">demo</Badge>
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 text-right font-semibold">{v.total}</td>
+                      <td className="py-2 text-right">{v.whatsapp}</td>
+                      <td className="py-2 text-right">{v.card}</td>
+                      <td className="py-2 text-right">{v.perfil}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -210,19 +227,24 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
           <Vazio>Nenhum clique de contato no período.</Vazio>
         )}
       </Bloco>
+    </>
+  );
+}
 
-      <Bloco
-        titulo={`Perfis de veterinários (${perfis.vets.length})`}
-        className="mt-6 md:mt-8"
-      >
-        <p className="-mt-2 mb-4 text-small text-text-muted">
-          Perfis reais e contas criadas. Tirar do ar esconde o perfil e as publicações (o veterinário não consegue
-          reverter); excluir apaga tudo. Os {perfis.demos} perfis demo saem pelo script de remoção.
-        </p>
-        {perfis.vets.length + perfis.semPerfil.length ? (
-          <ul className="divide-y divide-border">
-            {perfis.vets.map((v) => (
-              <li key={v.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+async function SecaoPerfis() {
+  const perfis = await listarPerfis();
+  return (
+    <Bloco titulo={`Perfis de veterinários (${perfis.vets.length})`} className="mt-6 md:mt-8">
+      <p className="-mt-2 mb-4 text-small text-text-muted">
+        Perfis reais e contas criadas. Tirar do ar esconde o perfil e as publicações (o veterinário não consegue
+        reverter); excluir apaga tudo. Os {perfis.demos} perfis demo saem pelo script de remoção.
+      </p>
+      {perfis.vets.length + perfis.semPerfil.length ? (
+        <ul className="divide-y divide-border">
+          {perfis.vets.map((v) => {
+            const st = STATUS_PERFIL[v.status];
+            return (
+              <li key={v.id} className={LINHA}>
                 <div className="min-w-0 text-small">
                   <p className="flex flex-wrap items-center gap-2">
                     {v.status === "ativo" ? (
@@ -232,8 +254,8 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                     ) : (
                       <span className="inline-flex min-h-11 items-center font-medium text-text">{v.nome}</span>
                     )}
-                    <Badge variant={STATUS_PERFIL[v.status].variante}>
-                      <Icon icon={STATUS_PERFIL[v.status].icone} size="sm" /> {STATUS_PERFIL[v.status].rotulo}
+                    <Badge variant={st.variante}>
+                      <Icon icon={st.icone} size="sm" /> {st.rotulo}
                     </Badge>
                   </p>
                   <p className="text-text">{v.crmv}</p>
@@ -244,12 +266,16 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                 </div>
                 <div className="flex shrink-0 flex-wrap items-start gap-2">
                   {(v.status === "ativo" || v.status === "inativo") && (
-                    <form action={alterarStatusPerfil}>
-                      <input type="hidden" name="id" value={v.id} />
-                      <Button type="submit" name="status" value={v.status === "ativo" ? "inativo" : "ativo"} variant="secondary">
+                    <FormAcao acao={alterarStatusPerfil} campos={{ id: v.id }}>
+                      <BotaoEnviar
+                        name="status"
+                        value={v.status === "ativo" ? "inativo" : "ativo"}
+                        variant="secondary"
+                        textoCarregando={v.status === "ativo" ? "Tirando do ar..." : "Pondo no ar..."}
+                      >
                         {v.status === "ativo" ? "Tirar do ar" : "Pôr no ar"}
-                      </Button>
-                    </form>
+                      </BotaoEnviar>
+                    </FormAcao>
                   )}
                   {v.admin ? (
                     <p className="inline-flex min-h-11 items-center text-caption text-text-muted">Conta de administrador</p>
@@ -258,149 +284,207 @@ async function Conteudo({ searchParams }: { searchParams: SearchParams }) {
                   )}
                 </div>
               </li>
-            ))}
-            {perfis.semPerfil.map((u) => (
-              <li key={u.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 text-small">
-                  <p className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex min-h-11 items-center font-medium break-all text-text">{u.email}</span>
-                    <Badge variant="neutral">Conta sem perfil</Badge>
-                  </p>
-                  <p className="mt-1 text-caption text-text-muted tabular-nums">Criada em {dataCurta(u.criadoEm)}</p>
-                </div>
-                <div className="flex shrink-0">
-                  <ExcluirPerfil nome={u.email} userId={u.id} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Vazio>Nenhum perfil real nem conta criada ainda.</Vazio>
-        )}
-      </Bloco>
-
-      <Bloco titulo={`Denúncias (${abertas} abertas)`} className="mt-6 md:mt-8">
-        {listaDenuncias.length ? (
-          <ul className="divide-y divide-border">
-            {listaDenuncias.map((d) => (
-              <li key={d.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 text-small">
-                  <p className="flex flex-wrap items-center gap-2">
-                    {d.veterinarians ? (
-                      <Link href={`/vet/${d.veterinarians.slug}`} className="inline-flex min-h-11 items-center font-medium text-text hover:underline">
-                        {d.veterinarians.nome_exibicao}
-                      </Link>
-                    ) : (
-                      <span className="font-medium text-text">{d.vet_slug} (fora do ar)</span>
-                    )}
-                    <Badge variant={d.status === "aberta" ? "warning" : "neutral"}>{ROTULO_STATUS[d.status]}</Badge>
-                  </p>
-                  <p className="text-text">{MOTIVOS_DENUNCIA.find((m) => m.slug === d.motivo)?.nome ?? d.motivo}</p>
-                  {d.descricao && <p className="mt-1 whitespace-pre-line text-text-muted">{d.descricao}</p>}
-                  <p className="mt-1 text-caption text-text-muted tabular-nums">
-                    {new Date(d.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}
-                  </p>
-                </div>
-                <form action={atualizarDenuncia} className="flex shrink-0 gap-2">
-                  <input type="hidden" name="id" value={d.id} />
-                  {d.status === "aberta" ? (
-                    <>
-                      <Button type="submit" name="status" value="analisada" variant="secondary">
-                        Analisada
-                      </Button>
-                      <Button type="submit" name="status" value="descartada" variant="ghost">
-                        Descartar
-                      </Button>
-                    </>
-                  ) : (
-                    <Button type="submit" name="status" value="aberta" variant="ghost">
-                      Reabrir
-                    </Button>
-                  )}
-                </form>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Vazio>Nenhuma denúncia.</Vazio>
-        )}
-      </Bloco>
-
-      <Bloco
-        titulo={`Lista de espera (${lista.length})`}
-        className="mt-6 md:mt-8"
-        acao={
-          lista.length > 0 && (
-            <a href="/admin/pre-cadastro.csv" download className={buttonClasses({ variant: "secondary" })}>
-              Baixar CSV
-            </a>
-          )
-        }
-      >
-        {lista.length ? (
-          <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-            <table className="w-full min-w-256 text-left text-small [&_td]:pr-4 [&_th]:pr-4">
-              <thead className="text-caption text-text-muted">
-                <tr>
-                  <th className="py-2 font-medium">Data</th>
-                  <th className="py-2 font-medium">Nome</th>
-                  <th className="py-2 font-medium">CRMV</th>
-                  <th className="py-2 font-medium">Cidades</th>
-                  <th className="py-2 font-medium">WhatsApp</th>
-                  <th className="py-2 font-medium">E-mail</th>
-                  <th className="py-2 font-medium">Espécies</th>
-                  <th className="py-2 font-medium">Modalidades</th>
-                  <th className="py-2 font-medium">Conta</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border align-top">
-                {lista.map((c) => (
-                  <tr key={c.id}>
-                    <td className="py-2 whitespace-nowrap text-text-muted tabular-nums">
-                      {new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                    </td>
-                    <td className="py-2 font-medium text-text">
-                      {c.nome}
-                      {c.perfil_slug && (
-                        <Link
-                          href={`/vet/${c.perfil_slug}`}
-                          className="ml-2 inline-flex min-h-11 items-center text-small font-normal text-primary hover:underline"
-                        >
-                          ver perfil
-                        </Link>
-                      )}
-                    </td>
-                    <td className="py-2 whitespace-nowrap">
-                      {formatarCrmv({ numero: c.crmv_numero, uf: c.crmv_uf, secundaria: false })}
-                    </td>
-                    <td className="py-2">{nomes(c.regioes, catalogos.regioes)}</td>
-                    <td className="py-2 whitespace-nowrap">
-                      <a href={`https://wa.me/${c.whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary hover:underline">
-                        {formatarTelefone(c.whatsapp)}
-                      </a>
-                    </td>
-                    <td className="py-2">
-                      <a href={`mailto:${c.email}`} className="inline-flex min-h-11 items-center text-primary hover:underline">
-                        {c.email}
-                      </a>
-                    </td>
-                    <td className="py-2">{nomes(c.especies, catalogos.especies)}</td>
-                    <td className="py-2">{nomes(c.modalidades, catalogos.modos)}</td>
-                    <td className="py-2">
-                      {c.tem_conta ? <Badge variant="success">Tem conta</Badge> : <BotaoConvite id={c.id} convidadoEm={c.convidado_em} />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <Vazio>Ninguém na lista de espera.</Vazio>
-        )}
-      </Bloco>
-    </>
+            );
+          })}
+          {perfis.semPerfil.map((u) => (
+            <li key={u.id} className={LINHA}>
+              <div className="min-w-0 text-small">
+                <p className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex min-h-11 items-center font-medium break-all text-text">{u.email}</span>
+                  <Badge variant="neutral">
+                    <Icon icon={CircleDashed} size="sm" /> Conta sem perfil
+                  </Badge>
+                </p>
+                <p className="mt-1 text-caption text-text-muted tabular-nums">Criada em {dataCurta(u.criadoEm)}</p>
+              </div>
+              <div className="flex shrink-0">
+                <ExcluirPerfil nome={u.email} userId={u.id} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Vazio>Nenhum perfil real nem conta criada ainda.</Vazio>
+      )}
+    </Bloco>
   );
 }
+
+async function SecaoDenuncias() {
+  // Service role: o nome aparece mesmo quando o perfil está pausado ou fora do ar.
+  const { data, error } = await createAdminClient()
+    .from("reports")
+    .select("id, vet_slug, motivo, descricao, status, created_at, veterinarians(nome_exibicao, slug, status)")
+    .order("status")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw new Error(error.message);
+  const lista = data ?? [];
+  const abertas = lista.filter((d) => d.status === "aberta").length;
+
+  return (
+    <Bloco titulo={`Denúncias (${abertas} ${abertas === 1 ? "aberta" : "abertas"})`} className="mt-6 md:mt-8">
+      {lista.length ? (
+        <ul className="divide-y divide-border">
+          {lista.map((d) => {
+            const vet = d.veterinarians;
+            const st = STATUS_DENUNCIA[d.status];
+            return (
+              <li key={d.id} className={LINHA}>
+                <div className="min-w-0 text-small">
+                  <p className="flex flex-wrap items-center gap-2">
+                    {vet?.status === "ativo" ? (
+                      <Link href={`/vet/${vet.slug}`} className="inline-flex min-h-11 items-center font-medium text-text hover:underline">
+                        {vet.nome_exibicao}
+                      </Link>
+                    ) : (
+                      <span className="inline-flex min-h-11 items-center font-medium text-text">
+                        {vet
+                          ? `${vet.nome_exibicao} (fora da busca)`
+                          : d.vet_slug === "perfil-excluido"
+                            ? "Perfil excluído"
+                            : d.vet_slug}
+                      </span>
+                    )}
+                    <Badge variant={st.variante}>
+                      <Icon icon={st.icone} size="sm" /> {st.rotulo}
+                    </Badge>
+                  </p>
+                  <p className="text-text">{MOTIVOS_DENUNCIA.find((m) => m.slug === d.motivo)?.nome ?? d.motivo}</p>
+                  {d.descricao && <p className="mt-1 whitespace-pre-line break-words text-text-muted">{d.descricao}</p>}
+                  <p className="mt-1 text-caption text-text-muted tabular-nums">
+                    {new Date(d.created_at).toLocaleString("pt-BR", {
+                      timeZone: "America/Sao_Paulo",
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </p>
+                </div>
+                <FormAcao acao={atualizarDenuncia} campos={{ id: d.id }} className="shrink-0">
+                  {d.status === "aberta" ? (
+                    <>
+                      <BotaoEnviar name="status" value="analisada" variant="secondary" textoCarregando="Salvando...">
+                        Analisada
+                      </BotaoEnviar>
+                      <BotaoEnviar name="status" value="descartada" variant="ghost" textoCarregando="Descartando...">
+                        Descartar
+                      </BotaoEnviar>
+                    </>
+                  ) : (
+                    <BotaoEnviar name="status" value="aberta" variant="ghost" textoCarregando="Reabrindo...">
+                      Reabrir
+                    </BotaoEnviar>
+                  )}
+                </FormAcao>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <Vazio>Nenhuma denúncia.</Vazio>
+      )}
+    </Bloco>
+  );
+}
+
+async function SecaoListaEspera() {
+  const supabase = await createClient();
+  const [{ data, error }, catalogos] = await Promise.all([supabase.rpc("admin_lista_espera"), getCatalogos()]);
+  if (error) throw new Error(error.message);
+  const lista = data ?? [];
+
+  return (
+    <Bloco
+      titulo={`Lista de espera (${lista.length})`}
+      className="mt-6 md:mt-8"
+      acao={
+        lista.length > 0 && (
+          <a href="/admin/pre-cadastro.csv" download className={buttonClasses({ variant: "secondary" })}>
+            Baixar CSV
+          </a>
+        )
+      }
+    >
+      {lista.length ? (
+        <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-256 text-left text-small [&_td]:pr-4 [&_th]:pr-4">
+            <thead className="text-caption text-text-muted">
+              <tr>
+                <th className="py-2 font-medium">Data</th>
+                <th className="py-2 font-medium">Nome</th>
+                <th className="py-2 font-medium">CRMV</th>
+                <th className="py-2 font-medium">Cidades</th>
+                <th className="py-2 font-medium">WhatsApp</th>
+                <th className="py-2 font-medium">E-mail</th>
+                <th className="py-2 font-medium">Espécies</th>
+                <th className="py-2 font-medium">Modalidades</th>
+                <th className="py-2 font-medium">Conta</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border align-top">
+              {lista.map((c) => (
+                <tr key={c.id}>
+                  <td className="py-2 whitespace-nowrap text-text-muted tabular-nums">{dataCurta(c.created_at)}</td>
+                  <td className="py-2 font-medium text-text">
+                    {c.nome}
+                    {c.perfil_slug && (
+                      <Link
+                        href={`/vet/${c.perfil_slug}`}
+                        className="ml-2 inline-flex min-h-11 items-center text-small font-normal text-primary hover:underline"
+                      >
+                        ver perfil
+                      </Link>
+                    )}
+                  </td>
+                  <td className="py-2 whitespace-nowrap">
+                    {formatarCrmv({ numero: c.crmv_numero, uf: c.crmv_uf, secundaria: false })}
+                  </td>
+                  <td className="py-2">{nomes(c.regioes, catalogos.regioes)}</td>
+                  <td className="py-2 whitespace-nowrap">
+                    <a
+                      href={`https://wa.me/${c.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-11 items-center text-primary hover:underline"
+                    >
+                      {formatarTelefone(c.whatsapp)}
+                    </a>
+                  </td>
+                  <td className="py-2">
+                    <a href={`mailto:${c.email}`} className="inline-flex min-h-11 items-center text-primary hover:underline">
+                      {c.email}
+                    </a>
+                  </td>
+                  <td className="py-2">{nomes(c.especies, catalogos.especies)}</td>
+                  <td className="py-2">{nomes(c.modalidades, catalogos.modos)}</td>
+                  <td className="py-2">
+                    {c.tem_conta ? (
+                      <Badge variant="success">
+                        <Icon icon={CircleCheck} size="sm" /> Tem conta
+                      </Badge>
+                    ) : (
+                      <BotaoConvite id={c.id} convidadoEm={c.convidado_em} />
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <Vazio>Ninguém na lista de espera.</Vazio>
+      )}
+    </Bloco>
+  );
+}
+
+const LINHA = "flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between";
+
+const STATUS_DENUNCIA = {
+  aberta: { rotulo: "Aberta", variante: "warning", icone: CircleAlert },
+  analisada: { rotulo: "Analisada", variante: "neutral", icone: CircleCheck },
+  descartada: { rotulo: "Descartada", variante: "neutral", icone: CircleMinus },
+} as const;
 
 // Perfis reais (com e-mail da conta) e contas que ainda não publicaram perfil.
 // Service role: o RLS público só mostra perfis ativos.
@@ -420,7 +504,7 @@ async function listarPerfis() {
   const usuarios = contas.data?.users ?? [];
   const emails = new Map(usuarios.map((u) => [u.id, u.email ?? null]));
   const comPerfil = new Set((vets.data ?? []).map((v) => v.user_id));
-  const deAdmins = new Set((admins.data ?? []).map((a) => a.email));
+  const deAdmins = new Set((admins.data ?? []).map((a) => a.email.toLowerCase()));
   return {
     demos: demos.count ?? 0,
     vets: (vets.data ?? []).map((v) => ({
@@ -451,11 +535,6 @@ const STATUS_PERFIL = {
 
 const dataCurta = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
-async function nomesDosVeterinarios(supabase: Awaited<ReturnType<typeof createClient>>, slugs: string[]) {
-  if (!slugs.length) return new Map<string, string>();
-  const { data } = await supabase.from("veterinarians").select("slug, nome_exibicao").in("slug", slugs);
-  return new Map((data ?? []).map((v) => [v.slug, v.nome_exibicao]));
-}
 
 const ROTULO_CHAVE: Record<string, string> = {
   q: "Nome",
@@ -484,16 +563,15 @@ function rotuloFiltro(chave: string, valor: string, cat: Catalogos) {
 const nomes = (slugs: string[], itens: { slug: string; nome: string }[]) =>
   slugs.map((s) => itens.find((i) => i.slug === s)?.nome ?? s).join(", ");
 
-const ROTULO_STATUS = { aberta: "Aberta", analisada: "Analisada", descartada: "Descartada" } as const;
 
 function Numero({ rotulo, valor, detalhe }: { rotulo: string; valor: number; detalhe: string }) {
   return (
-    <Card padding="lg">
-      <p className="text-small text-text-muted">{rotulo}</p>
-      <p className="mt-1 text-h1 text-text tabular-nums">
-        {valor.toLocaleString("pt-BR")}
-      </p>
-      <p className="mt-1 text-caption text-text-muted">{detalhe}</p>
+    // Número primeiro: no celular os três ficam lado a lado e o rótulo pode
+    // quebrar linha sem desalinhar os números.
+    <Card padding="lg" className="flex flex-col">
+      <p className="order-2 mt-1 text-small text-text">{rotulo}</p>
+      <p className="order-1 text-h1 text-text tabular-nums">{valor.toLocaleString("pt-BR")}</p>
+      <p className="order-3 mt-1 text-caption text-text-muted">{detalhe}</p>
     </Card>
   );
 }

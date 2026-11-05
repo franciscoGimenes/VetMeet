@@ -198,7 +198,8 @@ Escala (cada token já define família, peso, tamanho e entrelinha):
 - Nunca remover outline sem pôr o anel no lugar.
 
 ### Componentes base (`src/components/ui`)
-Button (primary, accent, secondary, ghost, whatsapp, danger, dangerGhost; tamanhos md 44px e lg 52px), Chip (selecionável),
+Button (primary, accent, secondary, ghost, whatsapp, danger, dangerGhost; tamanhos md 44px e lg 52px; `carregando` mostra o giro e trava),
+BotaoEnviar (submit que gira sozinho via useFormStatus; com vários botões no formulário, só o tocado gira), Chip (selecionável),
 OptionRow (linha inteira clicável com checkbox/radio desenhado), Disclosure (seção recolhível),
 Input, Select, Card, Badge, Sheet (bottom sheet no celular; `telaCheia` e `estaticoNoDesktop`),
 Alerta (bloco de erro/sucesso com ícone) e ErroCampo (mensagem de erro de campo ou grupo, com ícone).
@@ -212,6 +213,8 @@ Nenhuma falha pode passar em silêncio.
   problema junto ao botão ("Perfil não publicado. ...").
 - Validação no navegador que não achou nada não pode esconder os erros do servidor (ex.: CRMV já
   usado em outro perfil, que só o banco sabe).
+- Toda ação que espera o servidor mostra carregando: em formulário, `BotaoEnviar` (ou `carregando={pendente}`);
+  em link de navegação lenta, `useLinkStatus` (ex.: período do `/admin`).
 - Ações sem formulário (curtir, apagar comentário): `avisarErro(texto)` de `src/components/Avisos.tsx`
   mostra um aviso flutuante no topo (some em 6s). Ações que redirecionam usam `?erro=...` e um `Alerta`.
 
@@ -313,7 +316,10 @@ Use RLS no Supabase:
 - `/admin` usa login por link mágico do Supabase. Seção "Perfis de veterinários": perfis reais e contas
   sem perfil, com tirar do ar / pôr no ar (status `inativo`/`ativo`) e excluir de vez (apaga a conta e
   tudo em cascata, com os arquivos, por `excluirUsuario` em `src/lib/exclusao.ts`; perfil sem conta
-  apaga só o perfil). Contas de admin não aparecem para exclusão. Demos saem pelo script. Duas travas: `ADMIN_EMAILS` (env) decide quem recebe o link; a tabela `admins` decide quem lê os dados.
+  apaga só o perfil). Contas de admin não aparecem para exclusão.
+  A página confere o acesso (`is_admin`) e cada seção (números do período, perfis, denúncias, lista de espera)
+  carrega no próprio `<Suspense>`, em paralelo; trocar o período só recarrega os números. Ações do painel
+  usam `FormAcao` (`src/app/admin/FormAcao.tsx`): giro no botão e erro logo abaixo. Demos saem pelo script. Duas travas: `ADMIN_EMAILS` (env) decide quem recebe o link; a tabela `admins` decide quem lê os dados.
 - Veterinário: e-mail e senha (com confirmação de e-mail e recuperação) ou LinkedIn (`linkedin_oidc`, escopos openid profile email). Não existe conta de tutor.
 - Todos os links de e-mail e o LinkedIn voltam para `/auth/callback?next=...` (`urlCallback` em `src/lib/auth.ts`); o Supabase só aceita destinos listados em Authentication > URL Configuration > Redirect URLs.
 - Aceite: no cadastro por e-mail é gravado pelo servidor; quem entra pelo LinkedIn (ou aceitou versão antiga) passa por `/conta/aceite`.

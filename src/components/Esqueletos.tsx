@@ -114,24 +114,78 @@ export function EsqueletoPerfil() {
   );
 }
 
+// Painel: o cabeçalho e cada seção carregam por conta própria. Este é o
+// esqueleto da página enquanto confere o acesso.
 export function EsqueletoAdmin() {
   return (
     <Carregando rotulo="Carregando painel">
       <div className={linha("w-40", "h-9")} />
-      <div className="mt-6 grid gap-4 sm:grid-cols-3 md:mt-8">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className={cn(cardClasses({ padding: "lg" }), "space-y-2")}>
-            <div className={linha("w-24")} />
-            <div className={linha("w-16", "h-9")} />
-            <div className={linha("w-28", "h-3")} />
-          </div>
-        ))}
-      </div>
-      <div className={cn(cardClasses({ padding: "lg" }), "mt-6 md:mt-8")}>
-        <div className={linha("w-56", "h-6")} />
-        <div className={cn(pulso, "mt-4 h-44 rounded-control")} />
-      </div>
+      <EsqueletoNumeros />
+      <EsqueletoBlocoCorpo grafico />
     </Carregando>
+  );
+}
+
+function EsqueletoNumeros() {
+  return (
+    <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4 md:mt-8">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className={cn(cardClasses({ padding: "lg" }), "space-y-2")}>
+          <div className={linha("w-12", "h-9")} />
+          <div className={linha("w-20 max-w-full")} />
+          <div className={linha("w-28", "h-3")} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EsqueletoBlocoCorpo({ grafico, linhas = 3, titulo }: { grafico?: boolean; linhas?: number; titulo?: string }) {
+  return (
+    <div className={cn(cardClasses({ padding: "lg" }), "mt-6 md:mt-8")}>
+      {titulo ? <p className="text-h3 text-text">{titulo}</p> : <div className={linha("w-56", "h-6")} />}
+      {grafico ? (
+        <div className={cn(pulso, "mt-4 h-44 rounded-control")} />
+      ) : (
+        <div className="mt-4 divide-y divide-border">
+          {Array.from({ length: linhas }, (_, i) => (
+            <div key={i} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
+              <div className="flex-1 space-y-2">
+                <div className={linha("w-48 max-w-full", "h-5")} />
+                <div className={linha("w-32")} />
+                <div className={linha("w-40 max-w-full", "h-3")} />
+              </div>
+              <div className={cn(pulso, "h-11 w-24 shrink-0 rounded-control")} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Números, gráfico e rankings do período (recarregam ao trocar 7/30/90 dias).
+export function EsqueletoResumoAdmin() {
+  return (
+    <div aria-busy="true" role="status">
+      <span className="sr-only">Carregando números do período</span>
+      <div aria-hidden="true">
+        <EsqueletoNumeros />
+        <EsqueletoBlocoCorpo grafico />
+      </div>
+    </div>
+  );
+}
+
+// Uma seção do painel com o título já visível, para a página não pular.
+export function EsqueletoSecaoAdmin({ titulo }: { titulo: string }) {
+  return (
+    <div aria-busy="true" role="status">
+      <span className="sr-only">Carregando {titulo.toLowerCase()}</span>
+      <div aria-hidden="true">
+        <EsqueletoBlocoCorpo titulo={titulo} />
+      </div>
+    </div>
   );
 }
 

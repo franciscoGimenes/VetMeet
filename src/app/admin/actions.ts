@@ -65,30 +65,42 @@ export async function enviarConvite(_anterior: EstadoConvite, form: FormData): P
 
 type StatusDenuncia = Database["public"]["Enums"]["report_status"];
 
-export async function atualizarDenuncia(form: FormData) {
+// Estado das ações do painel: só o erro, mostrado junto do botão.
+export type EstadoAcao = { erro?: string };
+export type EstadoPerfilAdmin = EstadoAcao;
+
+export async function atualizarDenuncia(_anterior: EstadoAcao, form: FormData): Promise<EstadoAcao> {
   const supabase = await exigirAdmin();
   const status = String(form.get("status")) as StatusDenuncia;
-  if (!["aberta", "analisada", "descartada"].includes(status)) return;
+  const id = Number(form.get("id"));
+  if (!["aberta", "analisada", "descartada"].includes(status) || !Number.isInteger(id)) return { erro: "Pedido inválido." };
   // Com o RLS de admin, o próprio usuário logado altera (sem service role).
-  await supabase.from("reports").update({ status }).eq("id", Number(form.get("id")));
+  const { error } = await supabase.from("reports").update({ status }).eq("id", id);
+  if (error) {
+    console.error("denúncia:", error.message);
+    return { erro: "Não foi possível atualizar a denúncia. Tente de novo." };
+  }
   revalidatePath("/admin");
+  return {};
 }
-
-export type EstadoPerfilAdmin = { erro?: string };
 
 // Tirar do ar (inativo: some da busca, do perfil público e da Rede; o
 // veterinário não consegue reverter) ou pôr de volta no ar.
-export async function alterarStatusPerfil(form: FormData) {
+export async function alterarStatusPerfil(_anterior: EstadoAcao, form: FormData): Promise<EstadoAcao> {
   await exigirAdmin();
   const id = String(form.get("id") ?? "");
   const status = String(form.get("status") ?? "");
-  if (!eUuid(id) || (status !== "ativo" && status !== "inativo")) return;
+  if (!eUuid(id) || (status !== "ativo" && status !== "inativo")) return { erro: "Pedido inválido." };
   // Service role: o trigger veterinarians_guard só trava a sessão do veterinário.
-  const { error } = await createAdminClient().from("veterinarians").update({ status }).eq("id", id);
-  if (error) console.error("status do perfil:", error.message);
+  const { data, error } = await createAdminClient().from("veterinarians").update({ status }).eq("id", id).select("id");
+  if (error || !data?.length) {
+    if (error) console.error("status do perfil:", error.message);
+    return { erro: error ? "Não foi possível mudar o status. Tente de novo." : "Perfil não encontrado. Atualize a página." };
+  }
   updateTag(TAG_VETERINARIOS);
   updateTag(TAG_REDE);
   revalidatePath("/admin");
+  return {};
 }
 
 // Exclui de vez. Com conta: apaga a conta (perfil, publicações e fotos vão

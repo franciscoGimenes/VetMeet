@@ -1,5 +1,6 @@
 export { Alerta, ErroCampo } from "./Alerta";
 export { Badge, badgeClasses, type BadgeVariant } from "./Badge";
+export { BotaoEnviar } from "./BotaoEnviar";
 export { Button, ButtonLink, buttonClasses, type ButtonSize, type ButtonVariant } from "./Button";
 export { Card, cardClasses } from "./Card";
 export { Chip, chipClasses } from "./Chip";
